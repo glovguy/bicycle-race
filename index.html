@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+
+<canvas id="draw" width="1265" height="492"></canvas>
+<p></p>
+<button id="playPause" onclick="playpause();">Pause</button>
+<!-- <img id="blue-warrior-right" src="BlueSkullsWarrior.png" style="display: none;">
+<img id="blue-warrior-left" src="BlueSkullsWarriorLeft.png" style="display: none;">
+<img id="gold-queen-right" src="goldQueenRight.png" style="display: none;">
+<img id="gold-queen-left" src="goldQueenLeft.png" style="display: none;"> -->
+
+<p>Blue: <span id="blueScore">0</span></p>
+<p>Gold: <span id="goldScore">0</span></p>
+<!-- <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/convnet-min.js"></script> -->
+<script type="text/javascript" src="physics.js"></script>
+<script type="text/javascript">
+  const blueScoreDisplay = document.querySelector('#blueScore');
+  const goldScoreDisplay = document.querySelector('#goldScore');
+  const playPauseButton = document.querySelector('#playPause');
+
+  const canvas = document.querySelector('#draw');
+  const ctx = canvas.getContext('2d');
+
+  let play = true;
+  let score = { blue: 0, gold: 0 };
+  let keysPressed = {};
+
+  function actionInput(e) {
+    if (e.keyCode == 32 && !keysPressed[32]) { this.jump(); }
+    if (e.keyCode == 37) { protagonist.walkingDirection = -1; }
+    if (e.keyCode == 39) { protagonist.walkingDirection = 1; }
+  }
+
+  function actionStop(e) {
+    if (e.keyCode == 32) {
+      keysPressed[32] = false;
+      protagonist.kineticState.jumping = false;
+    }
+    if (e.keyCode == 37 && protagonist.walkingDirection == -1) { protagonist.walkingDirection = 0; }
+    if (e.keyCode == 39 && protagonist.walkingDirection == 1) { protagonist.walkingDirection = 0; }
+  }
+
+  function jump() {
+    keysPressed[32] = true;
+    protagonist.kineticState.jumping = true;
+    protagonist.kineticState.freefall = true;
+  }
+
+  function playpause() {
+    if (play === false) {
+      cycleOfLife();
+      play = true;
+      playPauseButton.innerHTML = 'Pause';
+    } else {
+      window.cancelAnimationFrame(requestId);
+      requestId = undefined;
+      play = false;
+      playPauseButton.innerHTML = 'Play';
+    }
+  }
+
+  function snapMoment(subject, other) {
+    const jumping = keysPressed[32] ? 1 : 0;
+    return {
+      input: {
+        posX: subject.pos.x,
+        posY: subject.pos.y,
+        velX: subject.vel.x,
+        velY: subject.vel.y,
+        otherPosX: other.pos.x,
+        otherPosY: other.pos.y,
+        otherVelX: other.vel.x,
+        otherVelY: other.vel.y,
+        otherFreefall: subject.kineticState.freefall,
+        distOtherX: other.pos.x - subject.pos.x,
+        distOtherY: other.pos.y - subject.pos.y,
+      },
+      output: {
+        walkingDirection: (subject.walkingDirection+1) / 2.0,
+        jumping: jumping
+      }
+    };
+  }
+
+  const debounce = (func, wait, immediate) => {
+    var timeout;
+    return function() {
+      var context = this, args = arguments;
+      var later = function() {
+        timeout = null;
+        if (!immediate) func.apply(context, args);
+      };
+      var callNow = immediate && !timeout;
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+      if (callNow) func.apply(context, args);
+    };
+  };
+
+  // const net = new convnetjs.Net();
+  let trainingData = [];
+
+  function botBrainCycle() {
+    const trainingDataPoint = snapMoment(protagonist, bot);
+    trainingData.push(trainingDataPoint);
+    if (trainingData.length > 30) { trainingData.shift(); }
+
+    const output = { walkingDirection: Math.random(), jumping: Math.random() };
+
+    if (output['jumping'] > 0.5) {
+      bot.kineticState.jumping = true;
+      bot.kineticState.freefall = true;
+    } else {
+      bot.kineticState.jumping = false;
+    }
+
+    if (output['walkingDirection'] < 0.33) { bot.walkingDirection = -1; }
+    if (output['walkingDirection'] >= 0.33 && output['walkingDirection'] < 0.66) { bot.walkingDirection = 0; }
+    if (output['walkingDirection'] >= 0.66) { bot.walkingDirection = 1; }
+  }
+
+  let debouncedBotBrain = debounce(botBrainCycle, 3, true);
+
+  function cycleOfLife() {
+    handleJousts(allObjs);
+    const collisions = findAllCollisions(allObjs);
+    allObjs.forEach((obj) => {
+      physicsCycle(obj, collisions[obj]);
+    });
+    debouncedBotBrain();
+
+    requestId = requestAnimFrame(cycleOfLife);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    drawObject(protagonist);
+    drawObject(bot);
+  }
+
+  window.addEventListener('keydown', actionInput);
+  window.addEventListener('keyup', actionStop);
+  window.requestAnimFrame = (function(callback){
+    return  window.requestAnimationFrame  ||
+      window.webkitRequestAnimationFrame  ||
+      window.mozRequestAnimationFrame     ||
+      function(callback){
+        window.setTimeout(callback, 20);
+      };
+  })();
+
+  cycleOfLife();
+
+</script>
+
+</body>
+</html>
