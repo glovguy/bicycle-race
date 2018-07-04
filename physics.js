@@ -13,6 +13,7 @@ const protagonist = {
     y: 200
   },
   size: 35,
+  killable: true,
   walkingSpeed: 5300,
   walkingDirection: 0,
   kineticState: {
@@ -36,6 +37,7 @@ const bot = {
     y: 200
   },
   size: 35,
+  killable: true,
   walkingSpeed: 5300,
   walkingDirection: 0,
   kineticState: {
@@ -49,9 +51,9 @@ const bot = {
     prevImg: goldQueenLeft
   }
 };
-const allObjs = [protagonist, bot];
+let allObjs = [protagonist, bot];
 const gravity = 981 * 2.1;
-const timeDel = 0.01;
+let timeDel = 0.01;
 const maxFreefallSpeed = 640;
 const maxFlightClimbSpeed = 1350;
 const maxHorizontalAirSpeed = 520;
@@ -62,17 +64,11 @@ const bumpCoefficient = 550;
 const jumpAccel = 550 / timeDel;
 
 
-function physicsCycle(obj, collisions) {
-  const collision = {
-    top: obj.pos.y - obj.size <= 0,
-    bottom: obj.pos.y + obj.size > canvas.height,
-    left: obj.pos.x - obj.size < 0,
-    right: obj.pos.x + obj.size > canvas.width,
-    topStick: obj.pos.y - obj.size == 0
-  };
+function physicsCycle(obj, collision) {
+  if (!collision) {return;}
 
   // actions
-  obj.vel.x += obj.walkingDirection * obj.walkingSpeed * timeDel;
+  if (obj.walkingDirection !== undefined) { obj.vel.x += obj.walkingDirection * obj.walkingSpeed * timeDel; }
   if (obj.kineticState.jumping) {
     obj.vel.y -= jumpAccel * timeDel;
     obj.kineticState.jumping = false;
@@ -80,6 +76,10 @@ function physicsCycle(obj, collisions) {
 
   // velocity
   if (obj.kineticState.freefall) { obj.vel.y += gravity * timeDel; }
+  if (collision && collision['joust']['vel']) {
+    obj.vel.x = collision['joust']['vel'].x;
+    obj.vel.y = collision['joust']['vel'].y;
+  }
   if (obj.vel.x !== 0) {
     const resistance = obj.kineticState.freefall ? flyingResistance : walkingResistance;
     if (obj.vel.x < resistance && obj.vel.x > -resistance) {
@@ -126,8 +126,19 @@ function physicsCycle(obj, collisions) {
   }
 
   // position
+  // if (collision['joust'] && objsAreIntersecting(obj, collision['joust']['other'])) {
+  //   const other = collision['joust']['other'];
+  //   const dispDirectionX = (obj.pos.x-other.pos.x) / Math.abs(obj.pos.x-other.pos.x);
+  //   const dispDirectionY = (obj.pos.y-other.pos.y) / Math.abs(obj.pos.y-other.pos.y);
+
+  //   obj.pos.x += ((obj.pos.x - other.pos.x) + (dispDirectionX * obj.size) + (dispDirectionX * other.size)) / 2.0;
+  //   obj.pos.y += ((obj.pos.y - other.pos.y) + (dispDirectionY * obj.size) + (dispDirectionX * other.size)) / 2.0;
+  // }
+
   obj.pos.y += obj.vel.y * timeDel;
   obj.pos.x += obj.vel.x * timeDel;
+
+
 
   if (collision.bottom) { obj.pos.y = canvas.height - obj.size; }
   if (obj.pos.y - obj.size < 0) {
@@ -141,8 +152,8 @@ function physicsCycle(obj, collisions) {
 function findAllCollisions(allObjs) {
   let collisionsHash = {};
   allObjs.forEach((obj) => {
-    if (!collisionsHash[obj]) { collisionsHash[obj] = []; }
-    collisionsHash[obj].push(edgeCollisionsForObject(obj));
+    collisionsHash[Object.id(obj)] = edgeCollisionsForObject(obj);
+    collisionsHash[Object.id(obj)]['joust'] = joustsForObject(obj, allObjs);
   });
   return collisionsHash;
 }
@@ -157,48 +168,82 @@ function edgeCollisionsForObject(obj) {
   };
 }
 
-function handleJousts(allObjs) {
-  let others = allObjs.slice();
-  allObjs.forEach((obj) => {
-    others.splice(others.indexOf(obj), 1);
-    handleJoustForObject(others, obj);
-  });
-}
-
-function handleJoustForObject(allObjs, obj) {
-  const collisions = allObjs.filter((other) => {
-        if (other == obj) { return false; }
-        const distBtObjs = Math.sqrt(
-          (obj.pos.x - other.pos.x) * (obj.pos.x - other.pos.x) +
-           (obj.pos.y - other.pos.y) * (obj.pos.y - other.pos.y)
-         );
-        if (distBtObjs <= obj.size + other.size) { return true; }
-      });
-  if (collisions.length == 0) { return; }
-
-  const other = collisions[0];
-  if (obj.pos.y < other.pos.y) {
-    score[obj.display.color] += 1;
-    other.pos.y = 75;
-    other.kineticState.freefall = true;
-    // if (obj.color == bot.color) { botBrainCycle(); }
-  } else if (obj.pos.y > other.pos.y) {
-    score[other.display.color] += 1;
-    obj.pos.y = 75;
-    obj.kineticState.freefall = true;
-    // if (other.color == bot.color) { botBrainCycle(); }
-  } else {
-    const xswp = obj.vel.x;
-    obj.vel.x = other.vel.x;
-    other.vel.x = xswp;
-    const yswp = obj.vel.y;
-    obj.vel.y = other.vel.y;
-    other.vel.y = yswp;
-  }
+function objMurderedByObj(obj, other) {
+  const deathAtX = obj.pos.x;
+  const deathAtY = obj.pos.y;
+  respawn(obj);
+  score[other.display.color] += 1;
+  spawnDebrisAt(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random());
+  spawnDebrisAt(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random());
+  spawnDebrisAt(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random());
+  spawnDebrisAt(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random());
+  rewardAgentsFor(other, 1.0);
+  rewardAgentsFor(obj, 0);
   blueScoreDisplay.innerHTML = score['blue'];
   goldScoreDisplay.innerHTML = score['gold'];
 }
 
+function objsAreIntersecting(obj, other) {
+  const distBtObjs = Math.sqrt(
+    (obj.pos.x - other.pos.x) * (obj.pos.x - other.pos.x) +
+     (obj.pos.y - other.pos.y) * (obj.pos.y - other.pos.y)
+   );
+  return distBtObjs <= obj.size + other.size;
+}
+
+function joustsForObject(obj, allObjs) {
+  const objCollisions = allObjs.filter((other) => {
+    if (other == obj) { return false; }
+    return objsAreIntersecting(obj, other);
+  });
+  if (objCollisions.length == 0) { return {}; }
+
+  const other = objCollisions[0];
+  if (other['killable'] && obj['killable'] && other.pos.y > obj.pos.y) {
+    objMurderedByObj(other, obj);
+  } else if (obj['killable'] && other['killable'] && obj.pos.y > other.pos.y) {
+    objMurderedByObj(obj, other);
+  } else {
+    return {
+      other: other,
+      vel: {
+        x: other.vel.x,
+        y: other.vel.y
+      }
+    };
+  }
+  return {};
+}
+
+function respawn(obj) {
+  obj.pos.y = 75;
+  obj.pos.x = (obj.pos.x > canvas.width/2.0) ? 100 : canvas.width - 100;
+  obj.kineticState.freefall = true;
+}
+
+function spawnDebrisAt(X, Y, velX=0, velY=0) {
+  const debris = {
+    pos: {
+      x: X,
+      y: Y
+    },
+    vel: {
+      x: velX / timeDel,
+      y: velY / timeDel
+    },
+    size: 3,
+    killable: false,
+    kineticState: {
+      freefall: true,
+      jumping: false
+    },
+    display: {
+      color: 'gray',
+      decay: 90 * timeDel
+    }
+  };
+  allObjs.push(debris);
+}
 
 function drawObject(obj) {
   ctx.fillStyle = obj.display.color;

@@ -13,10 +13,17 @@
 <img id="gold-queen-right" src="goldQueenRight.png" style="display: none;">
 <img id="gold-queen-left" src="goldQueenLeft.png" style="display: none;"> -->
 
-<p>Blue: <span id="blueScore">0</span></p>
-<p>Gold: <span id="goldScore">0</span></p>
-<!-- <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/convnet-min.js"></script> -->
+<h3>Blue: <span id="blueScore">0</span></h3>
+<h3>Gold: <span id="goldScore">0</span></h3>
+<textarea id="net-json" style="width:100%; height:200px; display:none;"></textarea>
+
+<script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/convnet-min.js"></script>
+<script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/deepqlearn.js"></script>
+<script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/util.js"></script>
+
+<script type="text/javascript" src="utilities.js"></script>
 <script type="text/javascript" src="physics.js"></script>
+<script type="text/javascript" src="brain.js"></script>
 <script type="text/javascript">
   const blueScoreDisplay = document.querySelector('#blueScore');
   const goldScoreDisplay = document.querySelector('#goldScore');
@@ -64,95 +71,72 @@
   }
 
   function snapMoment(subject, other) {
-    const jumping = keysPressed[32] ? 1 : 0;
+    return [
+      subject.pos.x,
+      subject.pos.y,
+      subject.vel.x,
+      subject.vel.y,
+      other.pos.x,
+      other.pos.y,
+      other.vel.x,
+      other.vel.y,
+      subject.kineticState.freefall,
+      other.pos.x - subject.pos.x,
+      other.pos.y - subject.pos.y,
+    ];
+
+  }
+
+  function actionSnapshot(subject) {
+    //keysPressed[32]
     return {
-      input: {
-        posX: subject.pos.x,
-        posY: subject.pos.y,
-        velX: subject.vel.x,
-        velY: subject.vel.y,
-        otherPosX: other.pos.x,
-        otherPosY: other.pos.y,
-        otherVelX: other.vel.x,
-        otherVelY: other.vel.y,
-        otherFreefall: subject.kineticState.freefall,
-        distOtherX: other.pos.x - subject.pos.x,
-        distOtherY: other.pos.y - subject.pos.y,
-      },
-      output: {
-        walkingDirection: (subject.walkingDirection+1) / 2.0,
-        jumping: jumping
-      }
+      walkingDirection: subject.walkingDirection,
+      jumping: subject.jumping
     };
   }
 
-  const debounce = (func, wait, immediate) => {
-    var timeout;
-    return function() {
-      var context = this, args = arguments;
-      var later = function() {
-        timeout = null;
-        if (!immediate) func.apply(context, args);
-      };
-      var callNow = immediate && !timeout;
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-      if (callNow) func.apply(context, args);
-    };
-  };
-
-  // const net = new convnetjs.Net();
-  let trainingData = [];
-
-  function botBrainCycle() {
-    const trainingDataPoint = snapMoment(protagonist, bot);
-    trainingData.push(trainingDataPoint);
-    if (trainingData.length > 30) { trainingData.shift(); }
-
-    const output = { walkingDirection: Math.random(), jumping: Math.random() };
-
-    if (output['jumping'] > 0.5) {
-      bot.kineticState.jumping = true;
-      bot.kineticState.freefall = true;
-    } else {
-      bot.kineticState.jumping = false;
-    }
-
-    if (output['walkingDirection'] < 0.33) { bot.walkingDirection = -1; }
-    if (output['walkingDirection'] >= 0.33 && output['walkingDirection'] < 0.66) { bot.walkingDirection = 0; }
-    if (output['walkingDirection'] >= 0.66) { bot.walkingDirection = 1; }
-  }
-
-  let debouncedBotBrain = debounce(botBrainCycle, 3, true);
+  let brainDebounceCycles = 12;
+  let currentCycle = 0;
 
   function cycleOfLife() {
-    handleJousts(allObjs);
+    // handleJousts(allObjs);
     const collisions = findAllCollisions(allObjs);
     allObjs.forEach((obj) => {
-      physicsCycle(obj, collisions[obj]);
+      physicsCycle(obj, collisions[Object.id(obj)]);
     });
-    debouncedBotBrain();
+    if (currentCycle == brainDebounceCycles) {
+      currentCycle = 0;
+      botBrainCycle();
+    }
+    currentCycle += 1;
 
     requestId = requestAnimFrame(cycleOfLife);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.strokeRect(0, 0, canvas.width, canvas.height);
-    drawObject(protagonist);
-    drawObject(bot);
+    allObjs.forEach(drawObject);
+    allObjs.forEach((obj) => {
+      if (obj.display.decay !== undefined) {
+        obj.display.decay -= 1 * timeDel;
+      }
+    });
+    allObjs = allObjs.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
+  }
+
+  function debrisFromUser($event) {
+    spawnDebrisAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5));
   }
 
   window.addEventListener('keydown', actionInput);
   window.addEventListener('keyup', actionStop);
-  window.requestAnimFrame = (function(callback){
-    return  window.requestAnimationFrame  ||
-      window.webkitRequestAnimationFrame  ||
-      window.mozRequestAnimationFrame     ||
-      function(callback){
-        window.setTimeout(callback, 20);
-      };
-  })();
+  canvas.addEventListener('click', debrisFromUser);
 
   cycleOfLife();
+  if (agents.length > 1) {
+    window.setTimeout(() => {
+      respawn(bot);
+    }, 1000*60);
+  }
 
 </script>
 
