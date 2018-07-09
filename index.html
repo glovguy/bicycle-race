@@ -8,6 +8,7 @@
 <canvas id="draw" width="1265" height="492"></canvas>
 <p></p>
 <button id="playPause" onclick="playpause();">Pause</button>
+<button id="startMulti" onclick="startMultiplayerGame();">Start Game</button>
 <!-- <img id="blue-warrior-right" src="BlueSkullsWarrior.png" style="display: none;">
 <img id="blue-warrior-left" src="BlueSkullsWarriorLeft.png" style="display: none;">
 <img id="gold-queen-right" src="goldQueenRight.png" style="display: none;">
@@ -20,6 +21,7 @@
 <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/convnet-min.js"></script>
 <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/deepqlearn.js"></script>
 <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/util.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 
 <script type="text/javascript" src="utilities.js"></script>
 <script type="text/javascript" src="physics.js"></script>
@@ -32,7 +34,11 @@
   const canvas = document.querySelector('#draw');
   const ctx = canvas.getContext('2d');
 
-  let play = true;
+  let playing = true;
+  let requestId;
+  let multiplayerMode;
+  let multplayerHost = false;
+  let gameUuid;
   let score = { blue: 0, gold: 0 };
   let keysPressed = {};
 
@@ -52,22 +58,31 @@
   }
 
   function jump() {
+    console.log('jump!');
     keysPressed[32] = true;
     protagonist.kineticState.jumping = true;
     protagonist.kineticState.freefall = true;
   }
 
+  function debrisFromUser($event) {
+    spawnDebrisAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5));
+  }
+
+  function resume() {
+    cycleOfLife();
+    playing = true;
+    playPauseButton.innerHTML = 'Pause';
+  }
+
+  function stop() {
+    window.cancelAnimationFrame(requestId);
+    requestId = undefined;
+    playing = false;
+    playPauseButton.innerHTML = 'Play';
+  }
+
   function playpause() {
-    if (play === false) {
-      cycleOfLife();
-      play = true;
-      playPauseButton.innerHTML = 'Pause';
-    } else {
-      window.cancelAnimationFrame(requestId);
-      requestId = undefined;
-      play = false;
-      playPauseButton.innerHTML = 'Play';
-    }
+    playing ? stop() : resume();
   }
 
   function snapMoment(subject, other) {
@@ -84,22 +99,70 @@
       other.pos.x - subject.pos.x,
       other.pos.y - subject.pos.y,
     ];
+  }
 
+  function snapMomentAsObject(subject, other) {
+    return {
+      selfPosX: subject.pos.x,
+      selfPosY: subject.pos.y,
+      selfVelX: subject.vel.x,
+      selfVelY: subject.vel.y,
+      otherPosX: other.pos.x,
+      otherPosY: other.pos.y,
+      otherVelX: other.vel.x,
+      otherVelY: other.vel.y,
+      selfFreefall: subject.kineticState.freefall,
+      relativePosX: other.pos.x - subject.pos.x,
+      relativePosY: other.pos.y - subject.pos.y,
+      walkingDirection: subject.walkingDirection,
+    };
+  }
+
+  function drawWorld() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    allObjs.forEach(drawObject);
   }
 
   function actionSnapshot(subject) {
-    //keysPressed[32]
     return {
       walkingDirection: subject.walkingDirection,
       jumping: subject.jumping
     };
   }
 
+  // function hostPayload() {
+  //   const payload = allObjs.reduce((payloadObjs, obj) => {
+  //     if (obj['display']['color'] === 'gold') {
+  //       payloadObjs['allObjs'].push({
+  //         pos: { x: obj['pos']['x'], y: obj['pos']['y'] },
+  //         vel: { x: obj['vel']['x'], y: obj['vel']['y'] },
+  //         size: obj['size'],
+  //         killable: obj['killable'],
+  //         walkingSpeed: obj['walkingSpeed'],
+  //         display: {
+  //           color: 'gold'
+  //         }
+  //       });
+  //     } else {
+  //       payloadObjs['allObjs'].push(obj);
+  //     }
+  //     return payloadObjs;
+
+  //   }, { allObjs: [] });
+  //   return payload;
+  // }
+
+  // function actionsPayload() {
+  //   return {
+  //     allObjs: [protagonist]
+  //   }
+  // }
+
   let brainDebounceCycles = 12;
   let currentCycle = 0;
 
   function cycleOfLife() {
-    // handleJousts(allObjs);
     const collisions = findAllCollisions(allObjs);
     allObjs.forEach((obj) => {
       physicsCycle(obj, collisions[Object.id(obj)]);
@@ -111,10 +174,9 @@
     currentCycle += 1;
 
     requestId = requestAnimFrame(cycleOfLife);
+    if (multplayerHost) { socket.emit('Host payload', {allObjs}); }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-    allObjs.forEach(drawObject);
+    drawWorld();
     allObjs.forEach((obj) => {
       if (obj.display.decay !== undefined) {
         obj.display.decay -= 1 * timeDel;
@@ -123,19 +185,84 @@
     allObjs = allObjs.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
   }
 
-  function debrisFromUser($event) {
-    spawnDebrisAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5));
+  function multiplayerCycle() {
+    const collisions = findAllCollisions(allObjs);
+    allObjs.forEach((obj) => {
+      physicsCycle(obj, collisions[Object.id(obj)]);
+    });
+
+    requestId = requestAnimFrame(multiplayerCycle);
+    // socket.emit('Client payload', {});
+
+    drawWorld();
+    allObjs.forEach((obj) => {
+      if (obj.display.decay !== undefined) {
+        obj.display.decay -= 1 * timeDel;
+      }
+    });
+    allObjs = allObjs.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
   }
 
   window.addEventListener('keydown', actionInput);
   window.addEventListener('keyup', actionStop);
-  canvas.addEventListener('click', debrisFromUser);
 
-  cycleOfLife();
-  if (agents.length > 1) {
-    window.setTimeout(() => {
-      respawn(bot);
-    }, 1000*60);
+  let socket;
+
+  function startMultiplayerGame() {
+    stop();
+    agents = [];
+    multiplayerMode = false;
+    multplayerHost = true;
+    gameUuid = Math.floor(Math.random() * 8999) + 1000;
+    window.history.pushState({}, "", gameUuid);
+    socket = io.connect({query: 'gameUuid='+gameUuid.toString(), resource: "socket.io"});
+    socket.on('Client actions from server', function(actionsFromServer) {
+      allObjs.push(actionsFromServer['debris']);
+    });
+    // canvas.addEventListener('click', debrisFromUser);
+    cycleOfLife();
+    spawnMultiplayerMatch();
+    score = { blue: 0, gold: 0 };
+    console.log('Started game at:', gameUuid);
+  }
+
+  function joinMultiplayerGame() {
+    stop();
+    multiplayerMode = true;
+    multplayerHost = false;
+    socket = io.connect({query: 'gameUuid='+gameUuid.toString(), resource: "socket.io"});
+    socket.on('allObjs from server', function(allObjsFromServer) {
+      allObjs = allObjsFromServer;
+    });
+    canvas.addEventListener('click', function($event) {
+      debrisFromUser($event);
+      socket.emit('Client payload', {debris: allObjs[allObjs.length-1]});
+    });
+    multiplayerCycle();
+    console.log('Joined multiplayer game at:', gameUuid);
+  }
+
+  function startGameAgainstBot() {
+    stop();
+    multiplayerMode = false;
+    canvas.addEventListener('click', debrisFromUser);
+    cycleOfLife();
+    if (agents.length > 1) {
+      window.setTimeout(() => {
+        respawn(bot);
+      }, 1000*60);
+    }
+    spawnMultiplayerMatch();
+    agents.push(neuralNetAgent);
+    score = { blue: 0, gold: 0 };
+    console.log('Started game at:', gameUuid);
+  }
+
+  if (window.location.pathname !== '/') {
+    gameUuid = parseInt(window.location.pathname.match(/([0-9]){4}/)[0]);
+    joinMultiplayerGame();
+  } else {
+    startGameAgainstBot();
   }
 
 </script>

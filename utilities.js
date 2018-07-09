@@ -52,3 +52,11 @@ function readTextFile(srcfile) {
     };
   }
 })();
+
+function consistentForIterations(arr, label, iter) {
+  if (arr.length < iter) { return false; }
+  for (let i=1; i<iter; i++) {
+    if (arr[arr.length-i][label] !== arr[arr.length-i-1][label]) { return false };
+  }
+  return true;
+}

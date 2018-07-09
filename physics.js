@@ -3,7 +3,9 @@ const blueWarriorRight = document.querySelector('#blue-warrior-right');
 const goldQueenLeft = document.querySelector('#gold-queen-left');
 const goldQueenRight = document.querySelector('#gold-queen-right');
 
-const protagonist = {
+let protagonist;
+let bot;
+const blueBody = {
   pos: {
     x: 100,
     y: 75
@@ -27,7 +29,7 @@ const protagonist = {
     prevImg: blueWarriorRight
   }
 };
-const bot = {
+const goldBody = {
   pos: {
     x: 1165,
     y: 75
@@ -51,7 +53,7 @@ const bot = {
     prevImg: goldQueenLeft
   }
 };
-let allObjs = [protagonist, bot];
+let allObjs = [];
 const gravity = 981 * 2.1;
 let timeDel = 0.01;
 const maxFreefallSpeed = 640;
@@ -159,13 +161,18 @@ function findAllCollisions(allObjs) {
 }
 
 function edgeCollisionsForObject(obj) {
-  return {
+  const collision = {
     top: obj.pos.y - obj.size <= 0,
     bottom: obj.pos.y + obj.size > canvas.height,
     left: obj.pos.x - obj.size < 0,
     right: obj.pos.x + obj.size > canvas.width,
     topStick: obj.pos.y - obj.size == 0
   };
+  if (collision['left']) { updateReportCard(obj, 'leftEdgeCollision'); }
+  if (collision['right']) { updateReportCard(obj, 'rightEdgeCollision'); }
+  if (collision['top']) { updateReportCard(obj, 'topEdgeCollision'); }
+  if (collision['bottom']) { updateReportCard(obj, 'bottomEdgeCollision'); }
+  return collision;
 }
 
 function objMurderedByObj(obj, other) {
@@ -177,8 +184,8 @@ function objMurderedByObj(obj, other) {
   spawnDebrisAt(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random());
   spawnDebrisAt(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random());
   spawnDebrisAt(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random());
-  rewardAgentsFor(other, 1.0);
-  rewardAgentsFor(obj, 0);
+  updateReportCard(other, 'kill');
+  updateReportCard(obj, 'died');
   blueScoreDisplay.innerHTML = score['blue'];
   goldScoreDisplay.innerHTML = score['gold'];
 }
@@ -259,4 +266,21 @@ function drawObject(obj) {
   // } else {
   //   ctx.drawImage(obj.display.prevImg, obj.pos.x-obj.size, obj.pos.y-obj.size, obj.size*2, obj.size*2);
   // }
+}
+
+function spawnMultiplayerMatch() {
+  protagonist = blueBody;
+  bot = goldBody;
+
+  blueBody['pos']['x'] = 100;
+  blueBody['pos']['y'] = 75;
+  blueBody['vel']['x'] = 200;
+  blueBody['vel']['y'] = 200;
+
+  goldBody['pos']['x'] = 1165;
+  goldBody['pos']['y'] = 75;
+  goldBody['vel']['x'] = -200;
+  goldBody['vel']['y'] = 200;
+
+  allObjs = [protagonist, bot];
 }
