@@ -208,8 +208,15 @@
 
   let socket;
 
-  function startMultiplayerGame() {
+  function terminateGame() {
+    if (socket) { socket.close(); }
+    agents = [];
+    allObjs = [];
     stop();
+  }
+
+  function startMultiplayerGame() {
+    terminateGame();
     agents = [];
     multiplayerMode = false;
     multplayerHost = true;
@@ -227,7 +234,7 @@
   }
 
   function joinMultiplayerGame() {
-    stop();
+    terminateGame();
     multiplayerMode = true;
     multplayerHost = false;
     socket = io.connect({query: 'gameUuid='+gameUuid.toString(), resource: "socket.io"});
@@ -243,7 +250,7 @@
   }
 
   function startGameAgainstBot() {
-    stop();
+    terminateGame();
     multiplayerMode = false;
     canvas.addEventListener('click', debrisFromUser);
     cycleOfLife();
