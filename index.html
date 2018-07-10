@@ -24,49 +24,53 @@
 <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/util.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 
-<script type="text/javascript" src="utilities.js"></script>
-<script type="text/javascript" src="physics.js"></script>
-<script type="text/javascript" src="brain.js"></script>
+<script type="text/javascript" src="static/utilities.js"></script>
+<script type="text/javascript" src="static/physics.js"></script>
+<script type="text/javascript" src="static/brain.js"></script>
 <script type="text/javascript">
   const blueScoreDisplay = document.querySelector('#blueScore');
   const goldScoreDisplay = document.querySelector('#goldScore');
   const playPauseButton = document.querySelector('#playPause');
 
-  const canvas = document.querySelector('#draw');
-  const ctx = canvas.getContext('2d');
+  const mainCanvas = document.querySelector('#draw');
+  const ctx = mainCanvas.getContext('2d');
 
   let playing = true;
   let requestId;
   let multiplayerMode;
-  let multplayerHost = false;
+  let multiplayerHost = false;
   let gameUuid;
   let score = { blue: 0, gold: 0 };
   let keysPressed = {};
+  setBoundsOfMap(mainCanvas.width, mainCanvas.height);
 
   function actionInput(e) {
-    if (e.keyCode == 32 && !keysPressed[32]) { this.jump(); }
-    if (e.keyCode == 37) { protagonist.walkingDirection = -1; }
-    if (e.keyCode == 39) { protagonist.walkingDirection = 1; }
+    if (e.keyCode == 32 && !keysPressed[32]) {this.jump(); }
+    if (e.keyCode == 37) { localPlayerAgent.actions.walkingDirection = -1; }
+    if (e.keyCode == 39) { localPlayerAgent.actions.walkingDirection = 1; }
   }
 
   function actionStop(e) {
     if (e.keyCode == 32) {
       keysPressed[32] = false;
-      protagonist.kineticState.jumping = false;
+      localPlayerAgent.actions.jumping = false;
     }
-    if (e.keyCode == 37 && protagonist.walkingDirection == -1) { protagonist.walkingDirection = 0; }
-    if (e.keyCode == 39 && protagonist.walkingDirection == 1) { protagonist.walkingDirection = 0; }
+    if (e.keyCode == 37 && localPlayerAgent.actions.walkingDirection == -1) { localPlayerAgent.actions.walkingDirection = 0; }
+    if (e.keyCode == 39 && localPlayerAgent.actions.walkingDirection == 1) { localPlayerAgent.actions.walkingDirection = 0; }
   }
 
   function jump() {
-    console.log('jump!');
     keysPressed[32] = true;
-    protagonist.kineticState.jumping = true;
-    protagonist.kineticState.freefall = true;
+    localPlayerAgent.actions.jumping = true;
   }
 
   function debrisFromUser($event) {
-    spawnDebrisAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5));
+    allObjects.push(debrisAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5)));
+  }
+
+  function spawnAndEmitDebris($event) {
+    debrisFromUser($event);
+    socket.emit('Client payload', { debris: allObjects[allObjects.length-1] });
   }
 
   function resume() {
@@ -75,15 +79,19 @@
     playPauseButton.innerHTML = 'Pause';
   }
 
+  function pause() {
+    stop();
+    playPauseButton.innerHTML = 'Play';
+  }
+
   function stop() {
     window.cancelAnimationFrame(requestId);
     requestId = undefined;
     playing = false;
-    playPauseButton.innerHTML = 'Play';
   }
 
   function playpause() {
-    playing ? stop() : resume();
+    playing ? pause() : resume();
   }
 
   function snapMoment(subject, other) {
@@ -119,7 +127,7 @@
     };
   }
 
-  function drawWorld() {
+  function drawWorld(canvas, allObjs) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.strokeRect(0, 0, canvas.width, canvas.height);
     allObjs.forEach(drawObject);
@@ -132,76 +140,59 @@
     };
   }
 
-  // function hostPayload() {
-  //   const payload = allObjs.reduce((payloadObjs, obj) => {
-  //     if (obj['display']['color'] === 'gold') {
-  //       payloadObjs['allObjs'].push({
-  //         pos: { x: obj['pos']['x'], y: obj['pos']['y'] },
-  //         vel: { x: obj['vel']['x'], y: obj['vel']['y'] },
-  //         size: obj['size'],
-  //         killable: obj['killable'],
-  //         walkingSpeed: obj['walkingSpeed'],
-  //         display: {
-  //           color: 'gold'
-  //         }
-  //       });
-  //     } else {
-  //       payloadObjs['allObjs'].push(obj);
-  //     }
-  //     return payloadObjs;
-
-  //   }, { allObjs: [] });
-  //   return payload;
-  // }
-
-  // function actionsPayload() {
-  //   return {
-  //     allObjs: [protagonist]
-  //   }
-  // }
-
   let brainDebounceCycles = 12;
   let currentCycle = 0;
 
   function cycleOfLife() {
-    const collisions = findAllCollisions(allObjs);
-    allObjs.forEach((obj) => {
-      physicsCycle(obj, collisions[Object.id(obj)]);
-    });
     if (currentCycle == brainDebounceCycles) {
       currentCycle = 0;
       botBrainCycle();
     }
     currentCycle += 1;
 
-    requestId = requestAnimFrame(cycleOfLife);
-    if (multplayerHost) { socket.emit('Host payload', {allObjs}); }
-
-    drawWorld();
-    allObjs.forEach((obj) => {
-      if (obj.display.decay !== undefined) {
-        obj.display.decay -= 1 * timeDel;
-      }
+    const collisions = findAllCollisions(allObjects);
+    allObjects.forEach((obj) => {
+      const agent = agentResponsibleFor(obj);
+      const actions = agent ? agent.actions : {};
+      physicsCycle(obj, collisions[Object.id(obj)], actions);
     });
-    allObjs = allObjs.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
+    agents.forEach((agent) => {
+      agent.actions.jumping = false;
+    });
+    allObjects.forEach((obj) => {
+      if (obj.display.decay !== undefined) { obj.display.decay -= 1 * timeDel; }
+    });
+    allObjects = allObjects.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
+
+    requestId = requestAnimFrame(cycleOfLife);
+    if (multiplayerHost) { socket.emit('Host payload', {allObjects}); }
+    drawWorld(mainCanvas, allObjects);
   }
 
   function multiplayerCycle() {
-    const collisions = findAllCollisions(allObjs);
-    allObjs.forEach((obj) => {
-      physicsCycle(obj, collisions[Object.id(obj)]);
+    const actionsToEmit = { walkingDirection: localPlayerAgent.actions.walkingDirection };
+    if (localPlayerAgent.actions.jumping) { actionsToEmit['jumping'] = true; }
+    socket.emit('Client payload', { actions: [localPlayerAgent.actions] });
+
+    const collisions = findAllCollisions(allObjects);
+    allObjects.forEach((obj) => {
+      const agent = agentResponsibleFor(obj);
+      const actions = agent ? agent.actions : {};
+      physicsCycle(obj, collisions[Object.id(obj)], actions);
     });
-
-    requestId = requestAnimFrame(multiplayerCycle);
-    // socket.emit('Client payload', {});
-
-    drawWorld();
-    allObjs.forEach((obj) => {
+    agents.forEach((agent) => {
+      agent.actions.jumping = false;
+    });
+    allObjects.forEach((obj) => {
       if (obj.display.decay !== undefined) {
         obj.display.decay -= 1 * timeDel;
       }
     });
-    allObjs = allObjs.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
+    allObjects = allObjects.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
+
+    requestId = requestAnimFrame(multiplayerCycle);
+
+    drawWorld(mainCanvas, allObjects);
   }
 
   window.addEventListener('keydown', actionInput);
@@ -212,7 +203,8 @@
   function terminateGame() {
     if (socket) { socket.close(); }
     agents = [];
-    allObjs = [];
+    allObjects = [];
+    mainCanvas.removeEventListener('click', debrisFromUser);
     stop();
   }
 
@@ -220,14 +212,23 @@
     terminateGame();
     agents = [];
     multiplayerMode = false;
-    multplayerHost = true;
+    multiplayerHost = true;
+    playPauseButton.disabled = true;
+    localPlayerAgent.body = blueBody;
+    onlinePlayerAgent.body = goldBody;
+    agents = [localPlayerAgent, onlinePlayerAgent];
     gameUuid = Math.floor(Math.random() * 8999) + 1000;
     window.history.pushState({}, "", gameUuid);
-    socket = io.connect({query: 'gameUuid='+gameUuid.toString(), resource: "socket.io"});
-    socket.on('Client actions from server', function(actionsFromServer) {
-      allObjs.push(actionsFromServer['debris']);
+    socket = io.connect({
+      query: 'gameUuid=' + gameUuid.toString(),
+      resource: "socket.io"
+    });
+    socket.on('Client payload from server', function(payload) {
+      if (payload['debris']) { allObjects.push(payload['debris']); }
+      if (payload['actions']) { onlinePlayerAgent.actions = payload['actions'][0]; }
     });
     // canvas.addEventListener('click', debrisFromUser);
+    playing = true;
     cycleOfLife();
     spawnMultiplayerMatch();
     score = { blue: 0, gold: 0 };
@@ -237,15 +238,21 @@
   function joinMultiplayerGame() {
     terminateGame();
     multiplayerMode = true;
-    multplayerHost = false;
-    socket = io.connect({query: 'gameUuid='+gameUuid.toString(), resource: "socket.io"});
-    socket.on('allObjs from server', function(allObjsFromServer) {
-      allObjs = allObjsFromServer;
+    multiplayerHost = false;
+    playPauseButton.disabled = true;
+    localPlayerAgent.body = goldBody;
+    onlinePlayerAgent.body = blueBody;
+    agents = [localPlayerAgent, onlinePlayerAgent];
+    allObjects = [];
+    socket = io.connect({
+      query: 'gameUuid=' + gameUuid.toString(),
+      resource: "socket.io"
     });
-    canvas.addEventListener('click', function($event) {
-      debrisFromUser($event);
-      socket.emit('Client payload', {debris: allObjs[allObjs.length-1]});
+    socket.on('Host payload from server', function(payload) {
+      allObjects = payload['allObjects'];
     });
+    mainCanvas.addEventListener('click', spawnAndEmitDebris);
+    playing = true;
     multiplayerCycle();
     console.log('Joined multiplayer game at:', gameUuid);
   }
@@ -253,7 +260,13 @@
   function startGameAgainstBot() {
     terminateGame();
     multiplayerMode = false;
-    canvas.addEventListener('click', debrisFromUser);
+    playPauseButton.disabled = false;
+    mainCanvas.addEventListener('click', debrisFromUser);
+    playing = true;
+    localPlayerAgent.body = blueBody;
+    neuralNetAgent.body = goldBody;
+    neuralNetAgent.enemy = blueBody;
+    agents = [localPlayerAgent, neuralNetAgent];
     cycleOfLife();
     if (agents.length > 1) {
       window.setTimeout(() => {

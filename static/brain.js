@@ -46,8 +46,10 @@ const neuralNetAgent = {
       this.rightEdgeCollision = false;
     }
   },
-  body: goldBody,
-  enemy: blueBody
+  actions: {
+    walkingDirection: 0,
+    jumping: false
+  }
 };
 const sinusoidalAgent = {
   decision: sinusoidalDecision,
@@ -69,8 +71,22 @@ const sinusoidalAgent = {
       this.rightEdgeCollision = false;
     }
   },
-  body: blueBody,
-  enemy: goldBody
+  actions: {
+    walkingDirection: 0,
+    jumping: false
+  }
+};
+const localPlayerAgent = {
+  actions: {
+    walkingDirection: 0,
+    jumping: false
+  }
+};
+const onlinePlayerAgent = {
+  actions: {
+    walkingDirection: 0,
+    jumping: false
+  }
 };
   // {
   //   brain: new deepqlearn.Brain(num_inputs, num_actions, opt),
@@ -80,8 +96,16 @@ const sinusoidalAgent = {
   // }
 // ];
 
+function resetAgentsActions(agents) {
+  agents.forEach((agent) => {
+    agent.actions['walkingDirection'] = 0;
+    agent.actions['jumping'] = false;
+  });
+}
+
 function botBrainCycle() {
   agents.forEach(agent => {
+    if (!agent['reportCard']) { return; }
     agent['reportCard']['history'].push(snapMomentAsObject(agent.body, agent.enemy));
     if (agent['reportCard']['history'].length > 50) { agent['reportCard']['history'].shift(); }
     agent.decision();
@@ -96,7 +120,7 @@ function agentResponsibleFor(obj) {
 
 function updateReportCard(obj, state) {
   const responsibleAgent = agentResponsibleFor(obj);
-  if (!responsibleAgent) { return; }
+  if (!responsibleAgent || !responsibleAgent['reportCard']) { return; }
   responsibleAgent['reportCard'][state] = true;
 }
 
@@ -121,28 +145,26 @@ function sinusoidalDecision() {
   sinusoidCycleTime += timeDel;
   if (sinusoidCycleTime > 10 * timeDel) { sinusoidCycleTime = 0; }
   if (sinusoidCycleTime < 5 * timeDel) {
-    this.body.kineticState.jumping = true;
-    this.body.kineticState.freefall = true;
+    this.actions.jumping = true;
   } else {
-    this.body.kineticState.jumping = false;
+    this.actions.jumping = false;
   }
 
-  if (this.body.walkingDirection === 0) { this.body.walkingDirection = -1; }
-  if (this.reportCard['leftEdgeCollision']) { this.body.walkingDirection = 1; }
-  if (this.reportCard['rightEdgeCollision']) { this.body.walkingDirection = -1; }
+  if (this.actions.walkingDirection === 0) { this.actions.walkingDirection = -1; }
+  if (this.reportCard['leftEdgeCollision']) { this.actions.walkingDirection = 1; }
+  if (this.reportCard['rightEdgeCollision']) { this.actions.walkingDirection = -1; }
 
   this.reportCard.reset();
 }
 
 function neuralNetDecision() {
-  // if (this.reportCard.reward() !== 0) { console.log('reward: ', this.reportCard.reward()); }
-  this.brain.backward(this.reportCard.reward()); // reward for previous frame
+  this.brain.backward(this.reportCard.reward()); // reward for previous decision
   this.reportCard.reset();
 
   const currentMoment = snapMoment(this.body, this.enemy);
   const output = this.brain.forward(currentMoment);
 
-  const action = {
+  const actionChoices = {
     0: {
       walkingDirection: 1,
       jumping: false
@@ -169,17 +191,8 @@ function neuralNetDecision() {
     },
   };
 
-  if (action[output]['jumping']) {
-    this.body.kineticState.jumping = true;
-    this.body.kineticState.freefall = true;
-  } else {
-    this.body.kineticState.jumping = false;
-  }
-  this.body.walkingDirection = action[output]['walkingDirection'];
-
-  // if (action[output]['walkingDirection'] < 0.33) { agent.body.walkingDirection = -1; }
-  // if (action[output]['walkingDirection'] >= 0.33 && output['walkingDirection'] < 0.66) { agent.body.walkingDirection = 0; }
-  // if (output['walkingDirection'] >= 0.66) { agent.body.walkingDirection = 1; }
+  this.actions.jumping = actionChoices[output]['jumping'];
+  this.actions.walkingDirection = actionChoices[output]['walkingDirection'];
 }
 
 function neuralNetReward() {

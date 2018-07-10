@@ -53,7 +53,7 @@ const goldBody = {
     prevImg: goldQueenLeft
   }
 };
-let allObjs = [];
+let allObjects = [];
 const gravity = 981 * 2.1;
 let timeDel = 0.01;
 const maxFreefallSpeed = 640;
@@ -64,16 +64,22 @@ const walkingResistance = 20;
 const flyingResistance = 8;
 const bumpCoefficient = 550;
 const jumpAccel = 550 / timeDel;
+let mapWidth;
+let mapHeight;
 
+function setBoundsOfMap(width, height) {
+  mapWidth = width;
+  mapHeight = height;
+}
 
-function physicsCycle(obj, collision) {
-  if (!collision) {return;}
+function physicsCycle(obj, collision, actions) {
+  if (!collision) { return; }
 
   // actions
-  if (obj.walkingDirection !== undefined) { obj.vel.x += obj.walkingDirection * obj.walkingSpeed * timeDel; }
-  if (obj.kineticState.jumping) {
+  if (actions.walkingDirection !== undefined) { obj.vel.x += actions.walkingDirection * obj.walkingSpeed * timeDel; }
+  if (actions.jumping) {
+    obj.kineticState.freefall = true;
     obj.vel.y -= jumpAccel * timeDel;
-    obj.kineticState.jumping = false;
   }
 
   // velocity
@@ -142,12 +148,12 @@ function physicsCycle(obj, collision) {
 
 
 
-  if (collision.bottom) { obj.pos.y = canvas.height - obj.size; }
+  if (collision.bottom) { obj.pos.y = mapHeight - obj.size; }
   if (obj.pos.y - obj.size < 0) {
     obj.pos.y = obj.size;
     if (-obj.vel.y > bumpCoefficient) { obj.vel.y = -obj.vel.y; }
   }
-  if (collision.right) { obj.pos.x = canvas.width - obj.size; }
+  if (collision.right) { obj.pos.x = mapWidth - obj.size; }
   if (collision.left) { obj.pos.x = obj.size; }
 }
 
@@ -163,9 +169,9 @@ function findAllCollisions(allObjs) {
 function edgeCollisionsForObject(obj) {
   const collision = {
     top: obj.pos.y - obj.size <= 0,
-    bottom: obj.pos.y + obj.size > canvas.height,
+    bottom: obj.pos.y + obj.size > mapHeight,
     left: obj.pos.x - obj.size < 0,
-    right: obj.pos.x + obj.size > canvas.width,
+    right: obj.pos.x + obj.size > mapWidth,
     topStick: obj.pos.y - obj.size == 0
   };
   if (collision['left']) { updateReportCard(obj, 'leftEdgeCollision'); }
@@ -180,10 +186,10 @@ function objMurderedByObj(obj, other) {
   const deathAtY = obj.pos.y;
   respawn(obj);
   score[other.display.color] += 1;
-  spawnDebrisAt(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random());
-  spawnDebrisAt(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random());
-  spawnDebrisAt(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random());
-  spawnDebrisAt(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random());
+  allObjects.push(debrisAt(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random()));
+  allObjects.push(debrisAt(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random()));
+  allObjects.push(debrisAt(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random()));
+  allObjects.push(debrisAt(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random()));
   updateReportCard(other, 'kill');
   updateReportCard(obj, 'died');
   blueScoreDisplay.innerHTML = score['blue'];
@@ -224,12 +230,12 @@ function joustsForObject(obj, allObjs) {
 
 function respawn(obj) {
   obj.pos.y = 75;
-  obj.pos.x = (obj.pos.x > canvas.width/2.0) ? 100 : canvas.width - 100;
+  obj.pos.x = (obj.pos.x > mapWidth/2.0) ? 100 : mapWidth - 100;
   obj.kineticState.freefall = true;
 }
 
-function spawnDebrisAt(X, Y, velX=0, velY=0) {
-  const debris = {
+function debrisAt(X, Y, velX=0, velY=0) {
+  return {
     pos: {
       x: X,
       y: Y
@@ -249,7 +255,6 @@ function spawnDebrisAt(X, Y, velX=0, velY=0) {
       decay: 90 * timeDel
     }
   };
-  allObjs.push(debris);
 }
 
 function drawObject(obj) {
@@ -276,11 +281,13 @@ function spawnMultiplayerMatch() {
   blueBody['pos']['y'] = 75;
   blueBody['vel']['x'] = 200;
   blueBody['vel']['y'] = 200;
+  blueBody.kineticState.freefall = true;
 
   goldBody['pos']['x'] = 1165;
   goldBody['pos']['y'] = 75;
   goldBody['vel']['x'] = -200;
   goldBody['vel']['y'] = 200;
+  goldBody.kineticState.freefall = true;
 
-  allObjs = [protagonist, bot];
+  allObjects = [protagonist, bot];
 }

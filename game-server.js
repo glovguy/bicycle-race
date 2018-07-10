@@ -5,22 +5,12 @@ var url = require('url');
 var port = process.env.PORT || 3000;
 
 
-app.get('/', function(req, res){
+app.get('/(|[0-9]{4})', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
 
-app.get('/:gameUuid([0-9]{4})', function(req, res){
-  res.sendFile(__dirname + '/index.html');
-});
-
-app.get('/brain.js', function(req, res){
-  res.sendFile(__dirname + '/brain.js');
-});
-app.get('/utilities.js', function(req, res){
-  res.sendFile(__dirname + '/utilities.js');
-});
-app.get('/physics.js', function(req, res){
-  res.sendFile(__dirname + '/physics.js');
+app.get('/static/:fileName([A-Za-z_]+\.js)', function(req, res){
+  res.sendFile(__dirname + '/static/' + req.params.fileName);
 });
 
 http.listen(port, function(){
@@ -37,10 +27,10 @@ io.on('connection', function(socket){
   });
 
   socket.on('Host payload', function(payload) {
-    io.to(gameUuid).emit('allObjs from server', payload['allObjs']);
+    io.to(gameUuid).emit('Host payload from server', payload);
   });
 
   socket.on('Client payload', function(payload) {
-    io.to(gameUuid).emit('Client actions from server', payload);
+    io.to(gameUuid).emit('Client payload from server', payload);
   });
 });
