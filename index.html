@@ -10,10 +10,6 @@
 <button id="playPause" onclick="playpause();">Pause</button>
 <p></p>
 <button id="startMulti" onclick="startMultiplayerGame();">Start Multiplayer Game</button>
-<!-- <img id="blue-warrior-right" src="BlueSkullsWarrior.png" style="display: none;">
-<img id="blue-warrior-left" src="BlueSkullsWarriorLeft.png" style="display: none;">
-<img id="gold-queen-right" src="goldQueenRight.png" style="display: none;">
-<img id="gold-queen-left" src="goldQueenLeft.png" style="display: none;"> -->
 
 <h3>Blue: <span id="blueScore">0</span></h3>
 <h3>Gold: <span id="goldScore">0</span></h3>
@@ -24,6 +20,7 @@
 <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/util.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 
+<script type="text/javascript" src="static/analytics.js"></script>
 <script type="text/javascript" src="static/utilities.js"></script>
 <script type="text/javascript" src="static/physics.js"></script>
 <script type="text/javascript" src="static/brain.js"></script>
@@ -156,6 +153,7 @@
       const actions = agent ? agent.actions : {};
       physicsCycle(obj, collisions[Object.id(obj)], actions);
     });
+    enforceRigidBodies(allObjects);
     agents.forEach((agent) => {
       agent.actions.jumping = false;
     });
@@ -180,6 +178,7 @@
       const actions = agent ? agent.actions : {};
       physicsCycle(obj, collisions[Object.id(obj)], actions);
     });
+    enforceRigidBodies(allObjects);
     agents.forEach((agent) => {
       agent.actions.jumping = false;
     });
@@ -210,7 +209,6 @@
 
   function startMultiplayerGame() {
     terminateGame();
-    agents = [];
     multiplayerMode = false;
     multiplayerHost = true;
     playPauseButton.disabled = true;
@@ -264,6 +262,8 @@
     mainCanvas.addEventListener('click', debrisFromUser);
     playing = true;
     localPlayerAgent.body = blueBody;
+    // sinusoidalAgent.body = blueBody;
+    // sinusoidalAgent.enemy = goldBody;
     neuralNetAgent.body = goldBody;
     neuralNetAgent.enemy = blueBody;
     agents = [localPlayerAgent, neuralNetAgent];

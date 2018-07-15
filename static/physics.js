@@ -129,25 +129,24 @@ function physicsCycle(obj, collision, actions) {
     obj.vel.x = Math.min(obj.vel.x, 0); }
 
   if (collision.bottom && obj.vel.y > 0) {
+    // console.log('collision bottom')
     obj.vel.y = 0;
     obj.kineticState.freefall = false;
   }
 
   // position
-  // if (collision['joust'] && objsAreIntersecting(obj, collision['joust']['other'])) {
-  //   const other = collision['joust']['other'];
-  //   const dispDirectionX = (obj.pos.x-other.pos.x) / Math.abs(obj.pos.x-other.pos.x);
-  //   const dispDirectionY = (obj.pos.y-other.pos.y) / Math.abs(obj.pos.y-other.pos.y);
-
-  //   obj.pos.x += ((obj.pos.x - other.pos.x) + (dispDirectionX * obj.size) + (dispDirectionX * other.size)) / 2.0;
-  //   obj.pos.y += ((obj.pos.y - other.pos.y) + (dispDirectionY * obj.size) + (dispDirectionX * other.size)) / 2.0;
-  // }
-
   obj.pos.y += obj.vel.y * timeDel;
   obj.pos.x += obj.vel.x * timeDel;
+}
 
+function enforceRigidBodies(allObjs) {
 
+  allObjs.forEach(enforceRigidBodiesForObj);
+}
 
+function enforceRigidBodiesForObj(obj) {
+  const collision = edgeCollisionsForObject(obj);
+  if (!collision) { return; }
   if (collision.bottom) { obj.pos.y = mapHeight - obj.size; }
   if (obj.pos.y - obj.size < 0) {
     obj.pos.y = obj.size;
@@ -155,6 +154,21 @@ function physicsCycle(obj, collision, actions) {
   }
   if (collision.right) { obj.pos.x = mapWidth - obj.size; }
   if (collision.left) { obj.pos.x = obj.size; }
+
+
+  // const objCollisions = allObjects.filter((other) => {
+  //   if (other == obj) { return false; }
+  //   return objsAreIntersecting(obj, other);
+  // });
+
+  // if (objCollisions.length == 0) { return {}; }
+  // objCollisions.forEach((other) => {
+  //   const dispDirectionX = (obj.pos.x-other.pos.x) / Math.abs(obj.pos.x-other.pos.x);
+  //   const dispDirectionY = (obj.pos.y-other.pos.y) / Math.abs(obj.pos.y-other.pos.y);
+
+  //   obj.pos.x += ((obj.pos.x - other.pos.x) + obj.size) / 2.0;
+  //   obj.pos.y += ((obj.pos.y - other.pos.y) + obj.size) / 2.0;
+  // });
 }
 
 function findAllCollisions(allObjs) {
@@ -169,9 +183,9 @@ function findAllCollisions(allObjs) {
 function edgeCollisionsForObject(obj) {
   const collision = {
     top: obj.pos.y - obj.size <= 0,
-    bottom: obj.pos.y + obj.size > mapHeight,
+    bottom: obj.pos.y + obj.size >= mapHeight,
     left: obj.pos.x - obj.size < 0,
-    right: obj.pos.x + obj.size > mapWidth,
+    right: obj.pos.x + obj.size >= mapWidth,
     topStick: obj.pos.y - obj.size == 0
   };
   if (collision['left']) { updateReportCard(obj, 'leftEdgeCollision'); }
