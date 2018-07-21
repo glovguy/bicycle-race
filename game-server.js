@@ -10,7 +10,11 @@ app.get('/(|[0-9]{4})', function(req, res){
 });
 
 app.get('/static/:fileName([A-Za-z_]+\.js)', function(req, res){
-  res.sendFile(__dirname + '/static/' + req.params.fileName);
+  if (req.params.fileName == 'rough.js') {
+    res.sendFile(__dirname + '/node_modules/roughjs/dist/rough.min.js');
+  } else {
+    res.sendFile(__dirname + '/static/' + req.params.fileName);
+  }
 });
 
 http.listen(port, function(){

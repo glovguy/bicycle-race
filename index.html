@@ -21,6 +21,8 @@
 <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/util.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 
+<script type="text/javascript" src="static/rough.js"></script>
+
 <script type="text/javascript" src="static/utilities.js"></script>
 <script type="text/javascript" src="static/physics.js"></script>
 <script type="text/javascript" src="static/brain.js"></script>
@@ -31,6 +33,7 @@
 
   const mainCanvas = document.querySelector('#draw');
   const ctx = mainCanvas.getContext('2d');
+  const rc = rough.canvas(mainCanvas);
 
   let playing = true;
   let requestId;
@@ -62,7 +65,7 @@
   }
 
   function debrisFromUser($event) {
-    allObjects.push(debrisAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5)));
+    allObjects.push(erasureAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5)));
   }
 
   function spawnAndEmitDebris($event) {
@@ -126,6 +129,8 @@
 
   function drawWorld(canvas, allObjs) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'lightgrey';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeRect(0, 0, canvas.width, canvas.height);
     allObjs.forEach(drawObject);
   }

@@ -16,6 +16,7 @@ const blueBody = {
   },
   size: 35,
   killable: true,
+  collidable: true,
   walkingSpeed: 5300,
   walkingDirection: 0,
   kineticState: {
@@ -40,6 +41,7 @@ const goldBody = {
   },
   size: 35,
   killable: true,
+  collidable: true,
   walkingSpeed: 5300,
   walkingDirection: 0,
   kineticState: {
@@ -200,6 +202,7 @@ function objMurderedByObj(obj, other) {
   const deathAtY = obj.pos.y;
   respawn(obj);
   score[other.display.color] += 1;
+  allObjects.push(erasureAt(deathAtX, deathAtY));
   allObjects.push(debrisAt(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random()));
   allObjects.push(debrisAt(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random()));
   allObjects.push(debrisAt(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random()));
@@ -220,7 +223,7 @@ function objsAreIntersecting(obj, other) {
 
 function joustsForObject(obj, allObjs) {
   const objCollisions = allObjs.filter((other) => {
-    if (other == obj) { return false; }
+    if (other == obj || !obj.collidable || !other.collidable) { return false; }
     return objsAreIntersecting(obj, other);
   });
   if (objCollisions.length == 0) { return {}; }
@@ -260,6 +263,7 @@ function debrisAt(X, Y, velX=0, velY=0) {
     },
     size: 3,
     killable: false,
+    collidable: true,
     kineticState: {
       freefall: true,
       jumping: false
@@ -271,20 +275,47 @@ function debrisAt(X, Y, velX=0, velY=0) {
   };
 }
 
+function erasureAt(X, Y) {
+  return {
+    pos: {
+      x: X,
+      y: Y
+    },
+    vel: {
+      x: 0,
+      y: 0
+    },
+    size: 25,
+    killable: false,
+    collidable: false,
+    kineticState: {
+      freefall: false,
+      jumping: false
+    },
+    display: {
+      erase: true,
+      decay: 30 * timeDel
+    }
+  };
+}
+
 function drawObject(obj) {
-  ctx.fillStyle = obj.display.color;
-  ctx.beginPath();
-  ctx.arc(obj.pos.x, obj.pos.y, obj.size,0,2*Math.PI);
-  ctx.fill();
-  // if (obj.vel.x < 0) {
-  //   ctx.drawImage(obj.display.leftImg, obj.pos.x-obj.size, obj.pos.y-obj.size, obj.size*2, obj.size*2);
-  //   obj.display.prevImg = obj.display.leftImg;
-  // } else if (obj.vel.x > 0) {
-  //   ctx.drawImage(obj.display.rightImg, obj.pos.x-obj.size, obj.pos.y-obj.size, obj.size*2, obj.size*2);
-  //   obj.display.prevImg = obj.display.rightImg;
-  // } else {
-  //   ctx.drawImage(obj.display.prevImg, obj.pos.x-obj.size, obj.pos.y-obj.size, obj.size*2, obj.size*2);
-  // }
+  if (obj.display.erase) {
+    ctx.globalCompositeOperation = "destination-out";
+    rc.circle(obj.pos.x, obj.pos.y, obj.size*4, {
+      roughness: 8,
+      fill: "rgba(0,0,0,1)",
+      fillWeight: 8,
+      hachureGap: 8
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  } else {
+    rc.circle(obj.pos.x, obj.pos.y, obj.size*2, {
+      fill: obj.display.color,
+      strokeWidth: 1,
+      roughness: Math.abs(obj.vel.x / maxHorizontalAirSpeed) + 2*Math.abs(obj.vel.y / maxFlightClimbSpeed)
+    });
+  }
 }
 
 function spawnMultiplayerMatch() {
