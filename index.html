@@ -6,7 +6,8 @@
 </head>
 <body>
 
-<canvas id="draw" width="1265" height="492"></canvas>
+<canvas id="draw" width="1265" height="492" style="background: url('./static/notebookpaper.jpg')"></canvas>
+
 <p></p>
 <button id="playPause" onclick="playpause();">Pause</button>
 <p></p>
@@ -130,7 +131,9 @@
   function drawWorld(canvas, allObjs) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'lightgrey';
+    ctx.globalAlpha = 0.5;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 1;
     ctx.strokeRect(0, 0, canvas.width, canvas.height);
     allObjs.forEach(drawObject);
   }
