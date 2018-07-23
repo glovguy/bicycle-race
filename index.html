@@ -25,6 +25,7 @@
 <script type="text/javascript" src="static/rough.js"></script>
 
 <script type="text/javascript" src="static/utilities.js"></script>
+<script type="text/javascript" src="static/display.js"></script>
 <script type="text/javascript" src="static/physics.js"></script>
 <script type="text/javascript" src="static/brain.js"></script>
 <script type="text/javascript">
@@ -66,7 +67,7 @@
   }
 
   function debrisFromUser($event) {
-    allObjects.push(erasureAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5)));
+    allObjects.push(debrisAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5)));
   }
 
   function spawnAndEmitDebris($event) {
@@ -126,16 +127,6 @@
       relativePosY: other.pos.y - subject.pos.y,
       walkingDirection: subject.walkingDirection,
     };
-  }
-
-  function drawWorld(canvas, allObjs) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'lightgrey';
-    ctx.globalAlpha = 0.5;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.globalAlpha = 1;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-    allObjs.forEach(drawObject);
   }
 
   function actionSnapshot(subject) {

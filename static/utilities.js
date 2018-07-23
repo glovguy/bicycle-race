@@ -60,3 +60,18 @@ function consistentForIterations(arr, label, iter) {
   }
   return true;
 }
+
+function moveSVGtoPoint(svgStr, moveX, moveY) {
+  const arr = svgStr.split(/([A-Z])/).splice(1);
+  for (i=0; i < arr.length; i=i+2) {
+    if (arr[i] === 'Z' || arr[i] === 'z') { continue; } // Z command has no coordinates associated
+    let pointArr = arr[i+1].split(' ');
+    for (p=0; p < pointArr.length; p=p+2) {
+      pointArr[p] = String(moveX + parseFloat(pointArr[p]));
+      pointArr[p+1] = String(moveY + parseFloat(pointArr[p+1]));
+    }
+    arr[i+1] = pointArr.join(' ');
+  }
+  const arrOut = arr.join('');
+  return arrOut;
+}
