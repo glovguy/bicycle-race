@@ -25,7 +25,7 @@ const blueBody = {
   },
   display: {
     color: 'blue',
-    draw: drawBall
+    draw: 'ball'
   }
 };
 const goldBody = {
@@ -48,7 +48,7 @@ const goldBody = {
   },
   display: {
     color: 'gold',
-    draw: drawBall
+    draw: 'ball'
   }
 };
 let allObjects = [];
@@ -273,7 +273,7 @@ function debrisAt(X, Y, velX=0, velY=0) {
     },
     display: {
       color: 'gray',
-      draw: drawDebris,
+      draw: 'debris',
       decay: 90 * timeDel
     }
   };
@@ -297,7 +297,7 @@ function erasureAt(X, Y) {
       jumping: false
     },
     display: {
-      draw: drawBoom,
+      draw: 'boom',
       decay: 30 * timeDel
     }
   };

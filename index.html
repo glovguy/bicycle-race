@@ -140,9 +140,14 @@
   let currentCycle = 0;
 
   function cycleOfLife() {
-    if (currentCycle == brainDebounceCycles) {
+    if (!multiplayerMode && currentCycle == brainDebounceCycles) {
       currentCycle = 0;
       botBrainCycle();
+    }
+    if (multiplayerMode) {
+      const actionsToEmit = { walkingDirection: localPlayerAgent.actions.walkingDirection };
+      if (localPlayerAgent.actions.jumping) { actionsToEmit['jumping'] = true; }
+      socket.emit('Client payload', { actions: [localPlayerAgent.actions] });
     }
     currentCycle += 1;
 
@@ -166,33 +171,6 @@
     drawWorld(mainCanvas, allObjects);
   }
 
-  function multiplayerCycle() {
-    const actionsToEmit = { walkingDirection: localPlayerAgent.actions.walkingDirection };
-    if (localPlayerAgent.actions.jumping) { actionsToEmit['jumping'] = true; }
-    socket.emit('Client payload', { actions: [localPlayerAgent.actions] });
-
-    const collisions = findAllCollisions(allObjects);
-    allObjects.forEach((obj) => {
-      const agent = agentResponsibleFor(obj);
-      const actions = agent ? agent.actions : {};
-      physicsCycle(obj, collisions[Object.id(obj)], actions);
-    });
-    enforceRigidBodies(allObjects);
-    agents.forEach((agent) => {
-      agent.actions.jumping = false;
-    });
-    allObjects.forEach((obj) => {
-      if (obj.display.decay !== undefined) {
-        obj.display.decay -= 1 * timeDel;
-      }
-    });
-    allObjects = allObjects.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
-
-    requestId = requestAnimFrame(multiplayerCycle);
-
-    drawWorld(mainCanvas, allObjects);
-  }
-
   window.addEventListener('keydown', actionInput);
   window.addEventListener('keyup', actionStop);
 
@@ -203,6 +181,7 @@
     agents = [];
     allObjects = [];
     mainCanvas.removeEventListener('click', debrisFromUser);
+    mainCanvas.removeEventListener('click', spawnAndEmitDebris);
     stop();
   }
 
@@ -224,7 +203,7 @@
       if (payload['debris']) { allObjects.push(payload['debris']); }
       if (payload['actions']) { onlinePlayerAgent.actions = payload['actions'][0]; }
     });
-    // canvas.addEventListener('click', debrisFromUser);
+    mainCanvas.addEventListener('click', debrisFromUser);
     playing = true;
     cycleOfLife();
     spawnMultiplayerMatch();
@@ -250,7 +229,7 @@
     });
     mainCanvas.addEventListener('click', spawnAndEmitDebris);
     playing = true;
-    multiplayerCycle();
+    cycleOfLife();
     console.log('Joined multiplayer game at:', gameUuid);
   }
 

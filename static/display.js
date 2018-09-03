@@ -14,7 +14,8 @@ function drawObject(obj) {
   if (obj.display.decay > 0 && obj.display.decay <= fadeOutFrames * timeDel) {
     ctx.globalAlpha = obj.display.decay / (fadeOutFrames * timeDel);
   }
-  obj.display.draw(obj);
+  const drawFn = drawFunctions[obj.display.draw];
+  drawFn(obj);
   ctx.globalAlpha = 1;
 }
 
@@ -68,3 +69,10 @@ function drawEraseMarks(obj) {
   });
   ctx.globalCompositeOperation = 'source-over';
 }
+
+const drawFunctions = {
+  'boom': drawBoom,
+  'ball': drawBall,
+  'erasure': drawEraseMarks,
+  'debris': drawDebris
+};
