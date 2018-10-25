@@ -1,56 +1,47 @@
-const blueWarriorLeft = document.querySelector('#blue-warrior-left');
-const blueWarriorRight = document.querySelector('#blue-warrior-right');
-const goldQueenLeft = document.querySelector('#gold-queen-left');
-const goldQueenRight = document.querySelector('#gold-queen-right');
-
 let protagonist;
 let bot;
-const blueBody = {
-  pos: {
-    x: 100,
-    y: 75
-  },
-  vel: {
-    x: 200,
-    y: 200
-  },
-  size: 35,
-  killable: true,
-  collidable: true,
-  walkingSpeed: 5300,
-  walkingDirection: 0,
-  kineticState: {
+
+class solidObject {
+  constructor(startX, startY, color, drawFunc, size) {
+    this.pos.x = startX;
+    this.pos.y = startY;
+    this.display.color = color;
+    this.display.draw = drawFunc;
+    this.size = size;
+  }
+  pos = {
+    x: null,
+    y: null
+  };
+  vel = {
+    x: 0,
+    y: 0
+  };
+  size = 5;
+  killable = false;
+  collidable = true;
+  kineticState = {
     freefall: true,
     jumping: false
-  },
-  display: {
-    color: 'blue',
+  };
+  display = {
+    color: 'black',
     draw: 'ball'
-  }
+  };
 };
-const goldBody = {
-  pos: {
-    x: 1165,
-    y: 75
-  },
-  vel: {
-    x: 200,
-    y: 200
-  },
-  size: 35,
-  killable: true,
-  collidable: true,
-  walkingSpeed: 5300,
-  walkingDirection: 0,
-  kineticState: {
-    freefall: true,
-    jumping: false
-  },
-  display: {
-    color: 'gold',
-    draw: 'ball'
+
+class agentObject extends solidObject {
+  constructor(startX, startY, color) {
+    super(startX, startY, color, 'ball', 35)
   }
-};
+  walkingSpeed = 5300;
+  walkingDirection = 0;
+  killable = true;
+}
+
+const blueBody = new agentObject(100, 75, 'blue');
+const goldBody = new agentObject(1165, 75, 'gold');
+
 let allObjects = [];
 const gravity = 981 * 2.1;
 let timeDel = 0.01;
@@ -65,6 +56,27 @@ const bumpCoefficient = 550;
 const jumpAccel = 550 / timeDel;
 let mapWidth;
 let mapHeight;
+
+// class physicsWorld {
+//   constructor(width, height) {
+//     this.mapWidth = width;
+//     this.mapHeight = height;
+//   }
+//   allObjects = [];
+//   gravity = 981 * 2.1;
+//   timeDel = 0.01;
+//   fadeOutFrames = 30;
+//   maxFreefallSpeed = 640;
+//   maxFlightClimbSpeed = 1350;
+//   maxHorizontalAirSpeed = 520;
+//   maxWalkingSpeed = 370;
+//   walkingResistance = 20;
+//   flyingResistance = 8;
+//   bumpCoefficient = 550;
+//   jumpAccel = 550 / this.timeDel;
+//   mapWidth: number;
+//   mapHeight: number;
+// }
 
 function setBoundsOfMap(width, height) {
   mapWidth = width;
@@ -186,7 +198,7 @@ function edgeCollisionsForObject(obj) {
   const collision = {
     top: obj.pos.y - obj.size <= 0,
     bottom: obj.pos.y + obj.size >= mapHeight,
-    left: obj.pos.x - obj.size < 0,
+    left: obj.pos.x - obj.size <= 0,
     right: obj.pos.x + obj.size >= mapWidth,
     topStick: obj.pos.y - obj.size == 0
   };

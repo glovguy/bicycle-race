@@ -4,22 +4,24 @@
   <meta charset="UTF-8">
   <script type="text/javascript" src="static/analytics.js"></script>
 </head>
-<body>
+<body style="text-align:center; margin-left:auto; margin-right:auto;">
 
-<canvas id="draw" width="1265" height="492" style="background: url('./static/notebookpaper.jpg')"></canvas>
+<canvas id="draw" width="1265" height="492" style="background: url('./static/notebookpaper_lowres.jpg')"></canvas>
 
 <p></p>
-<button id="playPause" onclick="playpause();">Pause</button>
-<p></p>
-<button id="startMulti" onclick="startMultiplayerGame();">Start Multiplayer Game</button>
+<div width="1265" style="text-align: left;">
+  <button id="playPause" onclick="playpause();">Pause</button>
+  <p></p>
+  <button id="startMulti" onclick="startMultiplayerGame();">Start Multiplayer Game</button>
 
-<h3>Blue: <span id="blueScore">0</span></h3>
-<h3>Gold: <span id="goldScore">0</span></h3>
-<textarea id="net-json" style="width:100%; height:200px; display:none;"></textarea>
+  <h3>Blue: <span id="blueScore">0</span></h3>
+  <h3>Gold: <span id="goldScore">0</span></h3>
+  <textarea id="net-json" style="width:100%; height:200px; display:none;"></textarea>
+</div>
 
-<script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/convnet-min.js"></script>
+<!-- <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/convnet-min.js"></script>
 <script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/deepqlearn.js"></script>
-<script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/util.js"></script>
+<script type="text/javascript" src="https://cs.stanford.edu/people/karpathy/convnetjs/build/util.js"></script> -->
 <script src="/socket.io/socket.io.js"></script>
 
 <script type="text/javascript" src="static/rough.js"></script>
@@ -240,11 +242,11 @@
     mainCanvas.addEventListener('click', debrisFromUser);
     playing = true;
     localPlayerAgent.body = blueBody;
-    // sinusoidalAgent.body = blueBody;
-    // sinusoidalAgent.enemy = goldBody;
-    neuralNetAgent.body = goldBody;
-    neuralNetAgent.enemy = blueBody;
-    agents = [localPlayerAgent, neuralNetAgent];
+    sinusoidalAgent.body = goldBody;
+    sinusoidalAgent.enemy = blueBody;
+    // neuralNetAgent.body = goldBody;
+    // neuralNetAgent.enemy = blueBody;
+    agents = [localPlayerAgent, sinusoidalAgent];
     cycleOfLife();
     if (agents.length > 1) {
       window.setTimeout(() => {
@@ -252,7 +254,7 @@
       }, 1000*60);
     }
     spawnMultiplayerMatch();
-    agents.push(neuralNetAgent);
+    agents.push(sinusoidalAgent);
     score = { blue: 0, gold: 0 };
     console.log('Started game at:', gameUuid);
   }

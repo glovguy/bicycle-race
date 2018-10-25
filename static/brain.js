@@ -29,28 +29,28 @@ opt.tdtrainer_options = tdtrainer_options;
 opt.layer_defs = layer_defs;
 
 let agents = [];
-const neuralNetAgent = {
-  brain: new deepqlearn.Brain(num_inputs, num_actions, opt),
-  decision: neuralNetDecision,
-  reportCard: {
-    died: false,
-    kill: false,
-    leftEdgeCollision: false,
-    rightEdgeCollision: false,
-    history: [],
-    reward: neuralNetReward,
-    reset: function() {
-      this.died = false;
-      this.kill = false;
-      this.leftEdgeCollision = false;
-      this.rightEdgeCollision = false;
-    }
-  },
-  actions: {
-    walkingDirection: 0,
-    jumping: false
-  }
-};
+// const neuralNetAgent = {
+//   brain: new deepqlearn.Brain(num_inputs, num_actions, opt),
+//   decision: neuralNetDecision,
+//   reportCard: {
+//     died: false,
+//     kill: false,
+//     leftEdgeCollision: false,
+//     rightEdgeCollision: false,
+//     history: [],
+//     reward: neuralNetReward,
+//     reset: function() {
+//       this.died = false;
+//       this.kill = false;
+//       this.leftEdgeCollision = false;
+//       this.rightEdgeCollision = false;
+//     }
+//   },
+//   actions: {
+//     walkingDirection: 0,
+//     jumping: false
+//   }
+// };
 const sinusoidalAgent = {
   decision: sinusoidalDecision,
   reportCard: {

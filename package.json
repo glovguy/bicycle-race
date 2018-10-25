@@ -1,5 +1,5 @@
 {
-  "name": "murder-king",
+  "name": "bicycle-race",
   "version": "0.0.1",
   "description": "Server for multiplayer js game",
   "dependencies": {
@@ -8,6 +8,7 @@
     "socket.io": "^2.1.1"
   },
   "scripts": {
+    "build": "tsc -w",
     "start": "node game-server.js"
   }
 }
