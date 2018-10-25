@@ -9,6 +9,6 @@
   },
   "scripts": {
     "build": "tsc -w",
-    "start": "node game-server.js"
+    "start": "tsc; node game-server.js"
   }
 }
