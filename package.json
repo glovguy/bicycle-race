@@ -5,7 +5,8 @@
   "dependencies": {
     "express": "^4.16.3",
     "roughjs": "^2.2.5",
-    "socket.io": "^2.1.1"
+    "socket.io": "^2.1.1",
+    "typescript": "2.5.3"
   },
   "scripts": {
     "build": "tsc -w",
