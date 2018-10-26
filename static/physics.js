@@ -1,42 +1,49 @@
 let protagonist;
 let bot;
 
+function exportThis(target, descriptor) {
+  exports[target.name] = target;
+  return descriptor;
+}
+
+@exportThis
+class Vector {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+  xDirection() { return this.x / Math.abs(this.x); }
+  yDirection() { return this.y / Math.abs(this.y); }
+}
+
+@exportThis
 class solidObject {
   constructor(startX, startY, color, drawFunc, size) {
-    this.pos.x = startX;
-    this.pos.y = startY;
-    this.display.color = color;
-    this.display.draw = drawFunc;
     this.size = size;
+    this.pos = new Vector(startX, startY);
+    this.vel = new Vector(0, 0);
+    this.killable = false;
+    this.collidable = true;
+    this.kineticState = {
+      freefall: true,
+      jumping: false
+    };
+    this.display = {
+      color: color,
+      draw: drawFunc
+    };
+    this.enforceRigidBodiesForObj = enforceRigidBodiesForObj;
+    this.edgeCollisionsForObject = edgeCollisionsForObject;
   }
-  pos = {
-    x: null,
-    y: null
-  };
-  vel = {
-    x: 0,
-    y: 0
-  };
-  size = 5;
-  killable = false;
-  collidable = true;
-  kineticState = {
-    freefall: true,
-    jumping: false
-  };
-  display = {
-    color: 'black',
-    draw: 'ball'
-  };
 };
 
 class agentObject extends solidObject {
   constructor(startX, startY, color) {
-    super(startX, startY, color, 'ball', 35)
+    super(startX, startY, color, 'ball', 35);
+    this.walkingSpeed = 5300;
+    this.walkingDirection = 0;
+    this.killable = true;
   }
-  walkingSpeed = 5300;
-  walkingDirection = 0;
-  killable = true;
 }
 
 const blueBody = new agentObject(100, 75, 'blue');
@@ -57,26 +64,100 @@ const jumpAccel = 550 / timeDel;
 let mapWidth;
 let mapHeight;
 
-// class physicsWorld {
-//   constructor(width, height) {
-//     this.mapWidth = width;
-//     this.mapHeight = height;
-//   }
-//   allObjects = [];
-//   gravity = 981 * 2.1;
-//   timeDel = 0.01;
-//   fadeOutFrames = 30;
-//   maxFreefallSpeed = 640;
-//   maxFlightClimbSpeed = 1350;
-//   maxHorizontalAirSpeed = 520;
-//   maxWalkingSpeed = 370;
-//   walkingResistance = 20;
-//   flyingResistance = 8;
-//   bumpCoefficient = 550;
-//   jumpAccel = 550 / this.timeDel;
-//   mapWidth: number;
-//   mapHeight: number;
-// }
+class physicsWorld {
+  constructor(width, height) {
+    this.mapWidth = width;
+    this.mapHeight = height;
+    this.allObjects = [];
+    this.gravity = 981 * 2.1;
+    this.timeDel = 0.01;
+    this.fadeOutFrames = 30;
+    this.maxFreefallSpeed = 640;
+    this.maxFlightClimbSpeed = 1350;
+    this.maxHorizontalAirSpeed = 520;
+    this.maxWalkingSpeed = 370;
+    this.walkingResistance = 20;
+    this.flyingResistance = 8;
+    this.bumpCoefficient = 550;
+    this.jumpAccel = 550 / this.timeDel;
+  }
+
+  physicsCycle(obj, collision, actions) {
+    if (!collision) { return; }
+
+    // actions
+    if (actions.walkingDirection !== undefined) { obj.vel.x += actions.walkingDirection * obj.walkingSpeed * timeDel; }
+    if (actions.jumping) {
+      obj.kineticState.freefall = true;
+      obj.vel.y -= this.jumpAccel * this.timeDel;
+    }
+
+    // velocity
+    if (obj.kineticState.freefall) { obj.vel.y += this.gravity * this.timeDel; }
+    if (collision && collision['joust']['vel']) {
+      obj.vel.x = collision['joust']['vel'].x;
+      obj.vel.y = collision['joust']['vel'].y;
+    }
+    if (obj.vel.x !== 0) {
+      const resistance = obj.kineticState.freefall ? this.flyingResistance : this.walkingResistance;
+      if (obj.vel.x < resistance && obj.vel.x > -resistance) {
+        obj.vel.x = 0;
+      } else {
+        const resistanceDirection = obj.vel.x / Math.abs(obj.vel.x);
+        obj.vel.x -= resistanceDirection * resistance;
+      }
+    }
+
+    if (obj.vel.y > this.maxFreefallSpeed && obj.kineticState.freefall) {
+      const direction = obj.vel.y / Math.abs(obj.vel.y);
+      obj.vel.y = this.maxFreefallSpeed * direction;
+    }
+    if (-obj.vel.y > this.maxFlightClimbSpeed && obj.kineticState.freefall) {
+      const direction = obj.vel.y / Math.abs(obj.vel.y);
+      obj.vel.y = this.maxFlightClimbSpeed * direction;
+    }
+    if (-obj.vel.y > this.bumpCoefficient && collision.topStick) {
+      const direction = obj.vel.y / Math.abs(obj.vel.y);
+      obj.vel.y = this.bumpCoefficient * direction;
+    }
+    if (Math.abs(obj.vel.x) > this.maxHorizontalAirSpeed && obj.kineticState.freefall) {
+      const direction = obj.vel.x / Math.abs(obj.vel.x);
+      obj.vel.x = this.maxHorizontalAirSpeed * direction;
+    }
+    if (Math.abs(obj.vel.x) > this.maxWalkingSpeed && !obj.kineticState.freefall) {
+      const direction = obj.vel.x / Math.abs(obj.vel.x);
+      obj.vel.x = this.maxWalkingSpeed * direction;
+    }
+
+    if (Math.abs(obj.vel.x) > this.bumpCoefficient && (collision.left || collision.right)) {
+      obj.vel.x = -obj.vel.x;
+    }
+    if (Math.abs(obj.vel.x) < this.bumpCoefficient && collision.left) {
+      obj.vel.x = Math.max(obj.vel.x, 0);
+    }
+    if (Math.abs(obj.vel.x) < this.bumpCoefficient && collision.right) {
+      obj.vel.x = Math.min(obj.vel.x, 0); }
+
+    if (collision.bottom && obj.vel.y > 0) {
+      // console.log('collision bottom')
+      obj.vel.y = 0;
+      obj.kineticState.freefall = false;
+    }
+
+    // position
+    obj.pos.y += obj.vel.y * this.timeDel;
+    obj.pos.x += obj.vel.x * this.timeDel;
+  };
+
+  enforceRigidBodies(allObjs) {
+    allObjs.forEach(enforceRigidBodiesForObj);
+  };
+
+  // findAllCollisions = findAllCollisions;
+  // objMurderedByObj = objMurderedByObj;
+  // private objsAreIntersecting = objsAreIntersecting;
+  // private joustsForObject = joustsForObject;
+}
 
 function setBoundsOfMap(width, height) {
   mapWidth = width;

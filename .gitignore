@@ -1,5 +1,3 @@
 *.png
 .DS_Store
 node_modules/
-static/physics.js
-static/display.js
