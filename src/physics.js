@@ -1,4 +1,4 @@
-let protagonist;
+// let protagonist;
 // let bot;
 
 const brain = require('./brain');

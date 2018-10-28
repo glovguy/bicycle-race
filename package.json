@@ -3,10 +3,11 @@
   "version": "0.0.1",
   "description": "Server for multiplayer js game",
   "dependencies": {
-    "express": "^4.16.3",
+    "express": "^4.16.4",
     "roughjs": "^2.2.5",
     "socket.io": "^2.1.1",
-    "webpack": "^4.23.1"
+    "webpack": "^4.23.1",
+    "webpack-cli": "^3.1.2"
   },
   "scripts": {
     "start": "npm run build && node game-server.js",
@@ -15,7 +16,6 @@
     "build": "webpack --mode production"
   },
   "devDependencies": {
-    "jest": "^23.6.0",
-    "webpack-cli": "^3.1.2"
+    "jest": "^23.6.0"
   }
 }

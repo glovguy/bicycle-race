@@ -1,3 +1,9 @@
+function exportThis(target, descriptor) {
+  exports[target.name] = target;
+  return descriptor;
+}
+// exports.exportThis = exportThis;
+
 window.requestAnimFrame = (function(callback){
   return  window.requestAnimationFrame  ||
     window.webkitRequestAnimationFrame  ||
