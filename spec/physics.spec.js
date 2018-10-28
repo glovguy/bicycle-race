@@ -1,4 +1,4 @@
-const physics = require('../static/physics');
+const physics = require('../src/physics');
 
 describe('Vector', () => {
   let newVec;

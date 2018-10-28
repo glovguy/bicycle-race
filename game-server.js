@@ -12,6 +12,8 @@ app.get('/(|[0-9]{4})', function(req, res){
 app.get('/static/:fileName([A-Za-z_]+\.(js|jpg))', function(req, res){
   if (req.params.fileName == 'rough.js') {
     res.sendFile(__dirname + '/node_modules/roughjs/dist/rough.min.js');
+  } else if (req.params.fileName.includes('.js')) {
+    res.sendFile(__dirname + '/dist/' + req.params.fileName);
   } else {
     res.sendFile(__dirname + '/static/' + req.params.fileName);
   }

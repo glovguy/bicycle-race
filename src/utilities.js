@@ -21,6 +21,7 @@ const debounce = (func, wait, immediate) => {
     if (callNow) func.apply(context, args);
   };
 };
+exports.debounce = debounce;
 
 function readTextFile(srcfile) {
   try { //this is for IE
@@ -75,3 +76,4 @@ function moveSVGtoPoint(svgStr, moveX, moveY) {
   const arrOut = arr.join('');
   return arrOut;
 }
+exports.moveSVGtoPoint = moveSVGtoPoint;
