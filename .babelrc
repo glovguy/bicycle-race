@@ -1,6 +1,1 @@
-{
-  "plugins": [
-    "transform-decorators-legacy"
-  ],
-  "presets": ["es2015"]
-}
+{}

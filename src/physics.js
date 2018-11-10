@@ -1,13 +1,5 @@
-// let protagonist;
-// let bot;
-
 const brain = require('./brain');
-// function exportThis(target, descriptor) {
-//   exports[target.name] = target;
-//   return descriptor;
-// }
 
-// @exportThis
 class Vector {
   constructor(x, y) {
     this.x = x;
@@ -18,8 +10,31 @@ class Vector {
 }
 exports.Vector = Vector;
 
-// @exportThis
-class solidObject {
+class EphemeralObject {
+  constructor() {
+    this.size = 0;
+    this.killable = false;
+    this.colliable = false;
+    this.kineticState = {
+      freefall: false,
+      jumping: false
+    };
+  }
+}
+
+class Erasure extends EphemeralObject {
+  constructor(startX, startY) {
+    super();
+    this.pos = new Vector(startX, startY);
+    this.vel = new Vector(0,0);
+    this.display = {
+      draw: 'boom',
+      decay: 30 * exports.timeDel
+    };
+  }
+}
+
+class SolidObject {
   constructor(startX, startY, color, drawFunc, size) {
     this.size = size;
     this.pos = new Vector(startX, startY);
@@ -38,9 +53,9 @@ class solidObject {
     this.edgeCollisionsForObject = edgeCollisionsForObject;
   }
 };
-exports.solidObject = solidObject;
+exports.SolidObject = SolidObject;
 
-class agentObject extends solidObject {
+class agentObject extends SolidObject {
   constructor(startX, startY, color) {
     super(startX, startY, color, 'ball', 35);
     this.walkingSpeed = 5300;
@@ -52,11 +67,18 @@ class agentObject extends solidObject {
 exports.blueBody = new agentObject(100, 75, 'blue');
 exports.goldBody = new agentObject(1165, 75, 'gold');
 
-// let allObjects = [];
+class Debris extends SolidObject {
+  constructor(x, y, velX=0, velY=0) {
+    super(x, y, 'gray', 'debris', 3);
+    this.vel = new Vector(velX / exports.timeDel, velY / exports.timeDel);
+    this.display.decay = 90 * exports.timeDel;
+  }
+}
+exports.Debris = Debris;
+
 exports.allObjects = [];
 const gravity = 981 * 2.1;
-let timeDel = 0.01;
-exports.timeDel = timeDel;
+exports.timeDel = 0.01;
 const maxFreefallSpeed = 640;
 const maxFlightClimbSpeed = 1350;
 exports.maxFlightClimbSpeed = maxFlightClimbSpeed;
@@ -66,7 +88,7 @@ const maxWalkingSpeed = 370;
 const walkingResistance = 20;
 const flyingResistance = 8;
 const bumpCoefficient = 550;
-const jumpAccel = 550 / timeDel;
+const jumpAccel = 550 / exports.timeDel;
 let mapWidth;
 let mapHeight;
 
@@ -174,14 +196,14 @@ function physicsCycle(obj, collision, actions) {
   if (!collision) { return; }
 
   // actions
-  if (actions.walkingDirection !== undefined) { obj.vel.x += actions.walkingDirection * obj.walkingSpeed * timeDel; }
+  if (actions.walkingDirection !== undefined) { obj.vel.x += actions.walkingDirection * obj.walkingSpeed * exports.timeDel; }
   if (actions.jumping) {
     obj.kineticState.freefall = true;
-    obj.vel.y -= jumpAccel * timeDel;
+    obj.vel.y -= jumpAccel * exports.timeDel;
   }
 
   // velocity
-  if (obj.kineticState.freefall) { obj.vel.y += gravity * timeDel; }
+  if (obj.kineticState.freefall) { obj.vel.y += gravity * exports.timeDel; }
   if (collision && collision['joust']['vel']) {
     obj.vel.x = collision['joust']['vel'].x;
     obj.vel.y = collision['joust']['vel'].y;
@@ -232,8 +254,8 @@ function physicsCycle(obj, collision, actions) {
   }
 
   // position
-  obj.pos.y += obj.vel.y * timeDel;
-  obj.pos.x += obj.vel.x * timeDel;
+  obj.pos.y += obj.vel.y * exports.timeDel;
+  obj.pos.x += obj.vel.x * exports.timeDel;
 }
 exports.physicsCycle = physicsCycle;
 
@@ -250,7 +272,7 @@ function enforceRigidBodiesForObj(obj) {
   if (obj.pos.y - obj.size < 0) {
     obj.pos.y = obj.size;
     if (-obj.vel.y > bumpCoefficient) {
-      obj.kineticState.rattled = 17 * timeDel;
+      obj.kineticState.rattled = 17 * exports.timeDel;
       obj.vel.y = -obj.vel.y;
     }
   }
@@ -303,12 +325,12 @@ function objMurderedByObj(obj, other) {
   const deathAtY = obj.pos.y;
   respawn(obj);
   window.score[other.display.color] += 1;
-  exports.allObjects.push(erasureAt(deathAtX, deathAtY));
-  other.kineticState.rattled = 17*timeDel;
-  exports.allObjects.push(debrisAt(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random()));
-  exports.allObjects.push(debrisAt(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random()));
-  exports.allObjects.push(debrisAt(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random()));
-  exports.allObjects.push(debrisAt(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random()));
+  exports.allObjects.push(new Erasure(deathAtX, deathAtY));
+  other.kineticState.rattled = 17*exports.timeDel;
+  exports.allObjects.push(new Debris(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random()));
+  exports.allObjects.push(new Debris(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random()));
+  exports.allObjects.push(new Debris(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random()));
+  exports.allObjects.push(new Debris(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random()));
   brain.updateReportCard(other, 'kill');
   brain.updateReportCard(obj, 'died');
   window.blueScoreDisplay.innerHTML = window.score['blue'];
@@ -336,8 +358,8 @@ function joustsForObject(obj, allObjs) {
   } else if (obj['killable'] && other['killable'] && obj.pos.y > other.pos.y) {
     objMurderedByObj(obj, other);
   } else {
-    obj.kineticState.rattled = 17 * timeDel;
-    other.kineticState.rattled = 17 * timeDel;
+    obj.kineticState.rattled = 17 * exports.timeDel;
+    other.kineticState.rattled = 17 * exports.timeDel;
     return {
       other: other,
       vel: {
@@ -355,56 +377,6 @@ function respawn(obj) {
   obj.kineticState.freefall = true;
 }
 exports.respawn = respawn;
-
-function debrisAt(X, Y, velX=0, velY=0) {
-  return {
-    pos: {
-      x: X,
-      y: Y
-    },
-    vel: {
-      x: velX / timeDel,
-      y: velY / timeDel
-    },
-    size: 3,
-    killable: false,
-    collidable: true,
-    kineticState: {
-      freefall: true,
-      jumping: false
-    },
-    display: {
-      color: 'gray',
-      draw: 'debris',
-      decay: 90 * timeDel
-    }
-  };
-}
-exports.debrisAt = debrisAt;
-
-function erasureAt(X, Y) {
-  return {
-    pos: {
-      x: X,
-      y: Y
-    },
-    vel: {
-      x: 0,
-      y: 0
-    },
-    size: 25,
-    killable: false,
-    collidable: false,
-    kineticState: {
-      freefall: false,
-      jumping: false
-    },
-    display: {
-      draw: 'boom',
-      decay: 30 * timeDel
-    }
-  };
-}
 
 function spawnMultiplayerMatch() {
   exports.protagonist = exports.blueBody;

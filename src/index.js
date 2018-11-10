@@ -38,7 +38,7 @@ function actionStop(e) {
 }
 
 function debrisFromUser($event) {
-  physics.allObjects.push(physics.debrisAt($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5)));
+  physics.allObjects.push(new physics.Debris($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5)));
 }
 
 function spawnAndEmitDebris($event) {
