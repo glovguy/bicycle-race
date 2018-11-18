@@ -1,4 +1,4 @@
-const physicsConstants = require('./physicsConstants');
+const physicsConstants = require('./constants');
 
 class Vector {
   constructor(x, y) {
@@ -76,6 +76,7 @@ class AgentObject extends SolidObject {
     this.killable = true;
     this.actions = new Actions();
     this.isAgent = true;
+    this.reportCard = [];
   }
 }
 exports.AgentObject = AgentObject;

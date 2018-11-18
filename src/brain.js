@@ -1,5 +1,5 @@
 const utilities = require('./utilities');
-const physics = require('./physics');
+const physics = require('./physics/physics');
 // Using demo at: https://cs.stanford.edu/people/karpathy/convnetjs/demo/rldemo.html
 let num_inputs = 11;
 let num_actions = 6;
@@ -29,7 +29,35 @@ opt.tdtrainer_options = tdtrainer_options;
 // opt.hidden_layer_sizes = [20,20];
 opt.layer_defs = layer_defs;
 
-// let agents = [];
+class Actions {
+  constructor(walkingDirection = 0, jumping = false) {
+    this.walkingDirection = walkingDirection;
+    this.jumping = jumping;
+  }
+}
+
+class Agent {
+  constructor() {
+    this.body = {};
+    this.isAi = false;
+    this.actions = new Actions();
+  }
+}
+
+class LocalAgent extends Agent {
+  jump() {
+    this.body.actions.jumping = true;
+  }
+}
+
+class AiAgent extends Agent {
+  constructor(decisionFunc) {
+    super();
+    this.isAi = true;
+    this.decision = decisionFunc;
+  }
+}
+
 exports.agents = [];
 // const neuralNetAgent = {
 //   brain: new deepqlearn.Brain(num_inputs, num_actions, opt),
@@ -53,43 +81,7 @@ exports.agents = [];
 //     jumping: false
 //   }
 // };
-exports.sinusoidalAgent = {
-  decision: sinusoidalDecision,
-  reportCard: {
-    died: false,
-    kill: false,
-    leftEdgeCollision: false,
-    rightEdgeCollision: false,
-    history: [],
-    reward: function() {
-      if (this.died) { return -1; }
-      if (this.kill) { return 1; }
-      return 0;
-    },
-    reset: function() {
-      this.died = false;
-      this.kill = false;
-      this.leftEdgeCollision = false;
-      this.rightEdgeCollision = false;
-    }
-  },
-  actions: {
-    walkingDirection: 0,
-    jumping: false
-  }
-};
-
-class Agent {
-  constructor() {
-    this.body = {};
-  }
-}
-
-class LocalAgent extends Agent {
-  jump() {
-    this.body.actions.jumping = true;
-  }
-}
+exports.sinusoidalAgent = new AiAgent(sinusoidalDecision);
 
 exports.localPlayerAgent = new LocalAgent(true);
 
@@ -111,7 +103,7 @@ function resetAgentsActions(agents) {
 
 function botBrainCycle() {
   exports.agents.forEach((agent) => {
-    if (!agent['reportCard']) { return; }
+    if (!agent.isAi) { return; }
     // agent['reportCard']['history'].push(snapMomentAsObject(agent.body, agent.enemy));
     // if (agent['reportCard']['history'].length > 50) { agent['reportCard']['history'].shift(); }
     agent.decision();
@@ -125,13 +117,6 @@ function agentResponsibleFor(obj) {
   });
 }
 exports.agentResponsibleFor = agentResponsibleFor;
-
-function updateReportCard(obj, state) {
-  const responsibleAgent = agentResponsibleFor(obj);
-  if (!responsibleAgent || !responsibleAgent['reportCard']) { return; }
-  responsibleAgent['reportCard'][state] = true;
-}
-exports.updateReportCard = updateReportCard;
 
 function savenet() {
   const j = exports.agents[0].brain.value_net.toJSON();
@@ -160,15 +145,15 @@ function sinusoidalDecision() {
   }
 
   if (this.body.actions.walkingDirection === 0) { this.body.actions.walkingDirection = -1; }
-  if (this.reportCard['leftEdgeCollision']) { this.body.actions.walkingDirection = 1; }
-  if (this.reportCard['rightEdgeCollision']) { this.body.actions.walkingDirection = -1; }
+  if (this.body.reportCard.includes('leftEdgeCollision')) { this.body.actions.walkingDirection = 1; }
+  if (this.body.reportCard.includes('rightEdgeCollision')) { this.body.actions.walkingDirection = -1; }
 
-  this.reportCard.reset();
+  this.body.reportCard = [];
 }
 
 function neuralNetDecision() {
   this.brain.backward(this.reportCard.reward()); // reward for previous decision
-  this.reportCard.reset();
+  this.reportCard = [];
 
   const currentMoment = snapMoment(this.body, this.enemy);
   const output = this.brain.forward(currentMoment);

@@ -1,5 +1,6 @@
-const physics = require('../src/physics');
-const physicsObjects = require('../src/physicsObjects');
+const physics = require('../src/physics/physics');
+const physicsObjects = require('../src/physics/objects');
+const collisionKinematics = require('../src/physics/collisionKinematics');
 console.log(physics);
 
 describe('Vector', () => {
@@ -35,8 +36,9 @@ describe('GameWorld', () => {
 
 });
 
-describe('TransformModule', () => {
+describe('collisionKinematics', () => {
   describe('#findAllCollisions', () => {
+    const mapDims = [5000,5000];
     let obj1 = new physicsObjects.SolidObject(0, 0, 'black', 'ball', 5);
     let obj2 = new physicsObjects.SolidObject(1, 1, 'blue', 'ball', 5);
     let obj3 = new physicsObjects.SolidObject(250, 250, 'red', 'ball', 5);
@@ -47,7 +49,7 @@ describe('TransformModule', () => {
       });
 
       it('detects a joust', () => {
-        const collisions = physics.TransformModule.findAllCollisions(allObjs);
+        const collisions = collisionKinematics.findAllCollisions(allObjs, mapDims);
         expect(collisions).toBeTruthy();
         expect(collisions[Object.id(obj1)]['joust']['other']).toBeTruthy();
         expect(collisions[Object.id(obj2)]['joust']['other']).toBeTruthy();
@@ -59,7 +61,7 @@ describe('TransformModule', () => {
         allObjs = [obj3];
       });
       it('returns an empty joust object', () => {
-        const collisions = physics.TransformModule.findAllCollisions(allObjs);
+        const collisions = collisionKinematics.findAllCollisions(allObjs, mapDims);
         expect(collisions).toBeTruthy();
         expect(collisions[Object.id(obj3)]['joust']['other']).toBeFalsy();
       });
