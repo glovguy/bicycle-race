@@ -79,22 +79,21 @@ exports.sinusoidalAgent = {
   }
 };
 
-exports.localPlayerAgent = {
-  actions: {
-    walkingDirection: 0,
-    jumping: false
-  },
-  jump: function () {
-    this.actions.jumping = true;
+class Agent {
+  constructor() {
+    this.body = {};
   }
-};
+}
 
-exports.onlinePlayerAgent = {
-  actions: {
-    walkingDirection: 0,
-    jumping: false
+class LocalAgent extends Agent {
+  jump() {
+    this.body.actions.jumping = true;
   }
-};
+}
+
+exports.localPlayerAgent = new LocalAgent(true);
+
+exports.onlinePlayerAgent = new Agent();
   // {
   //   brain: new deepqlearn.Brain(num_inputs, num_actions, opt),
   //   decision: neuralNetDecision,
@@ -105,8 +104,8 @@ exports.onlinePlayerAgent = {
 
 function resetAgentsActions(agents) {
   agents.forEach((agent) => {
-    agent.actions['walkingDirection'] = 0;
-    agent.actions['jumping'] = false;
+    agent.body.actions['walkingDirection'] = 0;
+    agent.body.actions['jumping'] = false;
   });
 }
 
@@ -155,14 +154,14 @@ function sinusoidalDecision() {
   sinusoidCycleTime += physics.timeDel;
   if (sinusoidCycleTime > 10 * physics.timeDel) { sinusoidCycleTime = 0; }
   if (sinusoidCycleTime < 5 * physics.timeDel) {
-    this.actions.jumping = true;
+    this.body.actions.jumping = true;
   } else {
-    this.actions.jumping = false;
+    this.body.actions.jumping = false;
   }
 
-  if (this.actions.walkingDirection === 0) { this.actions.walkingDirection = -1; }
-  if (this.reportCard['leftEdgeCollision']) { this.actions.walkingDirection = 1; }
-  if (this.reportCard['rightEdgeCollision']) { this.actions.walkingDirection = -1; }
+  if (this.body.actions.walkingDirection === 0) { this.body.actions.walkingDirection = -1; }
+  if (this.reportCard['leftEdgeCollision']) { this.body.actions.walkingDirection = 1; }
+  if (this.reportCard['rightEdgeCollision']) { this.body.actions.walkingDirection = -1; }
 
   this.reportCard.reset();
 }
@@ -201,8 +200,8 @@ function neuralNetDecision() {
     },
   };
 
-  this.actions.jumping = actionChoices[output]['jumping'];
-  this.actions.walkingDirection = actionChoices[output]['walkingDirection'];
+  this.body.actions.jumping = actionChoices[output]['jumping'];
+  this.body.actions.walkingDirection = actionChoices[output]['walkingDirection'];
 }
 
 function neuralNetReward() {

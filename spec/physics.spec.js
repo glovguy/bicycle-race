@@ -1,9 +1,11 @@
 const physics = require('../src/physics');
+const physicsObjects = require('../src/physicsObjects');
+console.log(physics);
 
 describe('Vector', () => {
   let newVec;
   beforeAll(() => {
-    newVec = new physics.Vector(2, -4);
+    newVec = new physicsObjects.Vector(2, -4);
   });
 
   test('x and y values', () => {
@@ -17,5 +19,50 @@ describe('Vector', () => {
 
   test('yDirection', () => {
     expect(newVec.yDirection()).toBe(-1);
+  });
+});
+
+describe('GameWorld', () => {
+  let newWorld;
+  beforeAll(() => {
+    newWorld = new physics.GameWorld();
+  });
+
+  test('#addObject', () => {
+    newWorld.addObject(new physicsObjects.SolidObject(0, 0, 'black', 'ball', 5));
+    expect(newWorld.allObjects.length).toEqual(1);
+  });
+
+});
+
+describe('TransformModule', () => {
+  describe('#findAllCollisions', () => {
+    let obj1 = new physicsObjects.SolidObject(0, 0, 'black', 'ball', 5);
+    let obj2 = new physicsObjects.SolidObject(1, 1, 'blue', 'ball', 5);
+    let obj3 = new physicsObjects.SolidObject(250, 250, 'red', 'ball', 5);
+    let allObjs;
+    describe('When two objects are overlapping', () => {
+      beforeAll(() => {
+        allObjs = [obj1, obj2, obj3];
+      });
+
+      it('detects a joust', () => {
+        const collisions = physics.TransformModule.findAllCollisions(allObjs);
+        expect(collisions).toBeTruthy();
+        expect(collisions[Object.id(obj1)]['joust']['other']).toBeTruthy();
+        expect(collisions[Object.id(obj2)]['joust']['other']).toBeTruthy();
+      });
+    });
+
+    describe('When there are no overlapping objects', () => {
+      beforeAll(() => {
+        allObjs = [obj3];
+      });
+      it('returns an empty joust object', () => {
+        const collisions = physics.TransformModule.findAllCollisions(allObjs);
+        expect(collisions).toBeTruthy();
+        expect(collisions[Object.id(obj3)]['joust']['other']).toBeFalsy();
+      });
+    });
   });
 });
