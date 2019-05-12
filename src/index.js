@@ -4,6 +4,7 @@ const physics = require('./physics/physics');
 const utilities = require('./utilities');
 const display = require('./display');
 const brain = require('./brain');
+import io from 'socket.io-client';
 
 window.blueScoreDisplay = document.querySelector('#blueScore');
 window.goldScoreDisplay = document.querySelector('#goldScore');
@@ -21,8 +22,10 @@ window.score = { blue: 0, gold: 0 };
 let keysPressed = {};
 physics.setBoundsOfMap(mainCanvas.width, mainCanvas.height);
 
-blueBody = new physicsObjects.AgentObject(100, 75, 'blue');
-goldBody = new physicsObjects.AgentObject(1165, 75, 'gold');
+let blueBody = new physicsObjects.AgentObject(100, 75, 'blue');
+let goldBody = new physicsObjects.AgentObject(1165, 75, 'gold');
+let protagonist;
+let bot;
 
 function actionInput(e) {
   if (e.keyCode == 32 && !keysPressed[32]) {
@@ -197,6 +200,7 @@ function startMultiplayerGame() {
   window.score = { blue: 0, gold: 0 };
   console.log('Started game at:', gameUuid);
 }
+window.startMultiplayerGame = startMultiplayerGame;
 
 function joinMultiplayerGame() {
   terminateGame();
@@ -212,13 +216,14 @@ function joinMultiplayerGame() {
     resource: "socket.io"
   });
   socket.on('Host payload from server', function(payload) {
-    physics.allObjects = payload['physics.allObjects'];
+    physics.allObjects = payload['allObjects'];
   });
   mainCanvas.addEventListener('click', spawnAndEmitDebris);
   playing = true;
   cycleOfLife();
   console.log('Joined multiplayer game at:', gameUuid);
 }
+window.joinMultiplayerGame = joinMultiplayerGame;
 
 function startGameAgainstBot() {
   terminateGame();

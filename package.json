@@ -5,13 +5,14 @@
   "dependencies": {
     "express": "^4.16.4",
     "roughjs": "^2.2.5",
-    "socket.io": "^2.1.1",
+    "socket.io": "^2.2.0",
     "webpack": "^4.23.1",
     "webpack-cli": "^3.1.2"
   },
   "scripts": {
-    "start": "npm run build && node game-server.js",
+    "start": "npm run build && npm run server",
     "test": "jest --watch",
+    "server": "node game-server.js",
     "dev": "webpack --mode development --watch",
     "build": "webpack --mode production"
   },
