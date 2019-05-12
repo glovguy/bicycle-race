@@ -29,17 +29,6 @@ const debounce = (func, wait, immediate) => {
 };
 exports.debounce = debounce;
 
-function readTextFile(srcfile) {
-  try { //this is for IE
-    var fso = new ActiveXObject("Scripting.FileSystemObject");;
-    if (fso.FileExists(srcfile)) {
-      var fileReader = fso.OpenTextFile(srcfile, 1);
-      var line = fileReader.ReadLine();
-      var jsonOutput = JSON.parse(line);
-    }
-  } catch (e) {}
-}
-
 (function() {
   if ( typeof Object.id == "undefined" ) {
     var id = 0;

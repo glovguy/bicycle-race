@@ -23,19 +23,6 @@ describe('Vector', () => {
   });
 });
 
-describe('GameWorld', () => {
-  let newWorld;
-  beforeAll(() => {
-    newWorld = new physics.GameWorld();
-  });
-
-  test('#addObject', () => {
-    newWorld.addObject(new physicsObjects.SolidObject(0, 0, 'black', 'ball', 5));
-    expect(newWorld.allObjects.length).toEqual(1);
-  });
-
-});
-
 describe('collisionKinematics', () => {
   describe('#findAllCollisions', () => {
     const mapDims = [5000,5000];

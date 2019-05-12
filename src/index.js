@@ -27,6 +27,14 @@ let goldBody = new physicsObjects.AgentObject(1165, 75, 'gold');
 let protagonist;
 let bot;
 
+const callbacks = { incrementScoreForTeam };
+
+function incrementScoreForTeam(teamColor) {
+  window.score[teamColor] += 1;
+  window.blueScoreDisplay.innerHTML = window.score['blue'];
+  window.goldScoreDisplay.innerHTML = window.score['gold'];
+}
+
 function actionInput(e) {
   if (e.keyCode == 32 && !keysPressed[32]) {
     keysPressed[32] = true;
@@ -131,7 +139,7 @@ function cycleOfLife() {
   }
   currentCycle += 1;
 
-  physics.physicsCycle();
+  physics.physicsCycle(callbacks);
 
   brain.agents.forEach((agent) => {
     agent.body.actions.jumping = false;

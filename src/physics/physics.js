@@ -17,28 +17,18 @@ const jumpAccel = 550 / physicsConstants.defaultTimeDelPerCycle;
 let mapWidth;
 let mapHeight;
 
-class GameWorld {
-  constructor() {
-    this.allObjects = [];
-  }
-  addObject(obj) {
-    this.allObjects.push(obj);
-  }
-}
-exports.GameWorld = GameWorld;
-
 function setBoundsOfMap(width, height) {
   mapWidth = width;
   mapHeight = height;
 }
 exports.setBoundsOfMap = setBoundsOfMap;
 
-function physicsCycle() {
+function physicsCycle(callbacks) {
   const collisions = collisionKinematics.findAllCollisions(exports.allObjects, [mapWidth,mapHeight]);
   exports.allObjects.forEach((obj) => {
     if (collisions[Object.id(obj)]['joust']['died']) {
       const killer = collisions[Object.id(obj)]['joust']['other'];
-      objMurderedByObj(obj, killer);
+      objMurderedByObj(obj, killer, callbacks);
     }
     const actions = obj.isAgent ? obj.actions : {};
     EulerCromer(obj, collisions[Object.id(obj)], actions);
@@ -152,11 +142,10 @@ function enforceRigidBodiesForObj(obj) {
   // });
 }
 
-function objMurderedByObj(obj, other) {
+function objMurderedByObj(obj, other, callbacks) {
   const deathAtX = obj.pos.x;
   const deathAtY = obj.pos.y;
   respawn(obj);
-  window.score[other.display.color] += 1;
   exports.allObjects.push(new physicsObjects.Erasure(deathAtX, deathAtY));
   other.kineticState.rattled = 17 * physicsConstants.defaultTimeDelPerCycle;
   exports.allObjects.push(new physicsObjects.Debris(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random()));
@@ -165,8 +154,7 @@ function objMurderedByObj(obj, other) {
   exports.allObjects.push(new physicsObjects.Debris(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random()));
   other.reportCard.push('kill');
   obj.reportCard.push('died');
-  window.blueScoreDisplay.innerHTML = window.score['blue'];
-  window.goldScoreDisplay.innerHTML = window.score['gold'];
+  callbacks.incrementScoreForTeam(other.display.color);
 }
 
 function respawn(obj) {
