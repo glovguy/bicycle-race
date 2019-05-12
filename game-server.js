@@ -3,7 +3,7 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var url = require('url');
 var port = process.env.PORT || 3000;
-// var physics = require('./src/physics.js');
+var physics = require('./src/physics/physics.js');
 
 
 app.get('/(|[0-9]{4})', function(req, res){

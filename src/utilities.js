@@ -4,14 +4,16 @@ function exportThis(target, descriptor) {
 }
 // exports.exportThis = exportThis;
 
-window.requestAnimFrame = (function(callback){
-  return  window.requestAnimationFrame  ||
-    window.webkitRequestAnimationFrame  ||
-    window.mozRequestAnimationFrame     ||
-    function(callback){
-      window.setTimeout(callback, 20);
-    };
-})();
+if (typeof window !== 'undefined') {
+  window.requestAnimFrame = (function(callback){
+    return  window.requestAnimationFrame  ||
+      window.webkitRequestAnimationFrame  ||
+      window.mozRequestAnimationFrame     ||
+      function(callback){
+        window.setTimeout(callback, 20);
+      };
+  })();
+}
 
 const debounce = (func, wait, immediate) => {
   var timeout;
