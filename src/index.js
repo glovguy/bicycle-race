@@ -1,10 +1,12 @@
+import io from 'socket.io-client';
+
+import * as controller from './controller';
 const physicsConstants = require('./physics/constants');
 const physicsObjects = require('./physics/objects');
 const physics = require('./physics/physics');
 const utilities = require('./utilities');
 const display = require('./display');
 const brain = require('./brain');
-import io from 'socket.io-client';
 
 window.blueScoreDisplay = document.querySelector('#blueScore');
 window.goldScoreDisplay = document.querySelector('#goldScore');
@@ -19,7 +21,6 @@ let multiplayerMode;
 let multiplayerHost = false;
 let gameUuid;
 window.score = { blue: 0, gold: 0 };
-let keysPressed = {};
 physics.setBoundsOfMap(mainCanvas.width, mainCanvas.height);
 
 let blueBody = new physicsObjects.AgentObject(100, 75, 'blue');
@@ -27,7 +28,12 @@ let goldBody = new physicsObjects.AgentObject(1165, 75, 'gold');
 let protagonist;
 let bot;
 
-const callbacks = { incrementScoreForTeam };
+const callbacks = {
+  incrementScoreForTeam,
+  onDeath,
+  onKill,
+  onCollision,
+};
 
 function incrementScoreForTeam(teamColor) {
   window.score[teamColor] += 1;
@@ -35,22 +41,16 @@ function incrementScoreForTeam(teamColor) {
   window.goldScoreDisplay.innerHTML = window.score['gold'];
 }
 
-function actionInput(e) {
-  if (e.keyCode == 32 && !keysPressed[32]) {
-    keysPressed[32] = true;
-    brain.localPlayerAgent.jump();
-  }
-  if (e.keyCode == 37) { brain.localPlayerAgent.body.actions.walkingDirection = -1; }
-  if (e.keyCode == 39) { brain.localPlayerAgent.body.actions.walkingDirection = 1; }
+function onDeath(obj) {
+  obj.onDeath();
 }
 
-function actionStop(e) {
-  if (e.keyCode == 32) {
-    keysPressed[32] = false;
-    brain.localPlayerAgent.body.actions.jumping = false;
-  }
-  if (e.keyCode == 37 && brain.localPlayerAgent.body.actions.walkingDirection == -1) { brain.localPlayerAgent.body.actions.walkingDirection = 0; }
-  if (e.keyCode == 39 && brain.localPlayerAgent.body.actions.walkingDirection == 1) { brain.localPlayerAgent.body.actions.walkingDirection = 0; }
+function onKill(obj) {
+  obj.onKill();
+}
+
+function onCollision(obj) {
+  obj.onCollision();
 }
 
 function debrisFromUser($event) {
@@ -150,8 +150,8 @@ function cycleOfLife() {
   display.drawWorld(ctx, physics.allObjects);
 }
 
-window.addEventListener('keydown', actionInput);
-window.addEventListener('keyup', actionStop);
+window.addEventListener('keydown', controller.actionInput);
+window.addEventListener('keyup', controller.actionStop);
 
 function spawnMultiplayerMatch() {
   protagonist = blueBody;
@@ -251,6 +251,15 @@ function startGameAgainstBot() {
   window.score = { blue: 0, gold: 0 };
   console.log('Started game at:', gameUuid);
 }
+
+window.requestAnimFrame = (function(callback){
+  return  window.requestAnimationFrame  ||
+    window.webkitRequestAnimationFrame  ||
+    window.mozRequestAnimationFrame     ||
+    function(callback){
+      window.setTimeout(callback, 20);
+    };
+})();
 
 if (window.location.pathname !== '/') {
   gameUuid = parseInt(window.location.pathname.match(/([0-9]){4}/)[0]);

@@ -78,6 +78,12 @@ class AgentObject extends SolidObject {
     this.isAgent = true;
     this.reportCard = [];
   }
+
+  onDeath() { this.reportCard.push('died'); }
+  onKill() { this.reportCard.push('kill'); }
+  onCollision() {
+    this.kineticState.rattled = 17 * physicsConstants.defaultTimeDelPerCycle;
+  }
 }
 exports.AgentObject = AgentObject;
 

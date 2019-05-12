@@ -1,4 +1,3 @@
-const brain = require('../brain');
 const physicsObjects = require('./objects');
 const physicsConstants = require('./constants');
 const collisionKinematics = require('./collisionKinematics');
@@ -108,7 +107,6 @@ function EulerCromer(obj, collision, actions) {
 exports.physicsCycle = physicsCycle;
 
 function enforceRigidBodies(allObjs) {
-
   allObjs.forEach(enforceRigidBodiesForObj);
 }
 exports.enforceRigidBodies = enforceRigidBodies;
@@ -147,13 +145,13 @@ function objMurderedByObj(obj, other, callbacks) {
   const deathAtY = obj.pos.y;
   respawn(obj);
   exports.allObjects.push(new physicsObjects.Erasure(deathAtX, deathAtY));
-  other.kineticState.rattled = 17 * physicsConstants.defaultTimeDelPerCycle;
+  callbacks.onCollision(other);
   exports.allObjects.push(new physicsObjects.Debris(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random()));
   exports.allObjects.push(new physicsObjects.Debris(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random()));
   exports.allObjects.push(new physicsObjects.Debris(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random()));
   exports.allObjects.push(new physicsObjects.Debris(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random()));
-  other.reportCard.push('kill');
-  obj.reportCard.push('died');
+  callbacks.onDeath(obj);
+  callbacks.onKill(other);
   callbacks.incrementScoreForTeam(other.display.color);
 }
 

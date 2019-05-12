@@ -1,20 +1,3 @@
-function exportThis(target, descriptor) {
-  exports[target.name] = target;
-  return descriptor;
-}
-// exports.exportThis = exportThis;
-
-if (typeof window !== 'undefined') {
-  window.requestAnimFrame = (function(callback){
-    return  window.requestAnimationFrame  ||
-      window.webkitRequestAnimationFrame  ||
-      window.mozRequestAnimationFrame     ||
-      function(callback){
-        window.setTimeout(callback, 20);
-      };
-  })();
-}
-
 const debounce = (func, wait, immediate) => {
   var timeout;
   return function() {
@@ -74,3 +57,8 @@ function moveSVGtoPoint(svgStr, moveX, moveY) {
   return arrOut;
 }
 exports.moveSVGtoPoint = moveSVGtoPoint;
+
+function pipe(...fns) {
+  return function(x) { return fns.reduce((y, f) => f(y), x); };
+}
+exports.pipe = pipe;
