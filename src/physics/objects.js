@@ -71,6 +71,7 @@ class Actions {
 class AgentObject extends SolidObject {
   constructor(startX, startY, color) {
     super(startX, startY, color, 'ball', 35);
+    this.objectType = this.constructor.name;
     this.walkingSpeed = 5300;
     this.walkingDirection = 0;
     this.killable = true;
@@ -95,3 +96,7 @@ class Debris extends SolidObject {
   }
 }
 exports.Debris = Debris;
+
+exports.objectTypes = {
+  [AgentObject.constructor.name]: AgentObject,
+}
