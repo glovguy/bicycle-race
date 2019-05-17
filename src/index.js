@@ -55,15 +55,15 @@ function onCollision(obj) {
 }
 
 function debrisFromUser($event) {
-  const newDebris = new physicsObjects.Debris($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5));
-  physics.allObjects.push(newDebris);
-  World.push(newDebris);
-  return newDebris;
+  const debris = new physicsObjects.Debris($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5));
+  physics.allObjects.push(debris);
+  World.push(debris);
+  return debris;
 }
 
 function spawnAndEmitDebris($event) {
-  const newDebris = debrisFromUser($event);
-  socket.emit('Client payload', { debris: newDebris });
+  const debris = debrisFromUser($event);
+  socket.emit('Client payload', { debris });
 }
 
 function resume() {
@@ -208,7 +208,14 @@ function startMultiplayerGame() {
     resource: "socket.io"
   });
   socket.on('Client payload from server', function(payload) {
-    if (payload['debris']) { physics.allObjects.push(payload['debris']); }
+    if (payload['debris']) {
+      payload['debris'].map((debris) => {
+        if (obj['objectType']) {
+          Object.setPrototypeOf(obj, physicsObjects.objectTypes[obj['objectType']].prototype);
+        }
+      })
+      physics.allObjects.push();
+    }
     if (payload['actions']) { brain.onlinePlayerAgent.body.actions = payload['actions'][0]; }
   });
   mainCanvas.addEventListener('click', debrisFromUser);

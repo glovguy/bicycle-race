@@ -30,49 +30,52 @@ function drawObject(obj) {
   if (obj.display.decay > 0 && obj.display.decay <= fadeOutFrames * physicsConstants.defaultTimeDelPerCycle) {
     ctx.globalAlpha = obj.display.decay / (fadeOutFrames * physicsConstants.defaultTimeDelPerCycle);
   }
-  const drawFn = drawFunctions[obj.display.draw];
-  drawFn(obj);
+  if (typeof obj.draw !== Function) { console.log(obj)}
+  obj.draw();
   ctx.globalAlpha = 1;
 }
 
-function drawBoom(obj) {
-  rc.path(utilities.moveSVGtoPoint(boomPathString, obj.pos.x-50, obj.pos.y-50), {
+function drawBoom() {
+  rc.path(utilities.moveSVGtoPoint(boomPathString, this.pos.x-50, this.pos.y-50), {
     roughness: 1.5,
     strokeWidth: 0.5,
     fill: 'yellow',
     fillStyle: 'solid'
   });
 }
+exports.drawBoom = drawBoom;
 
-function drawBall(obj) {
-  rc.circle(obj.pos.x, obj.pos.y, obj.size*2, {
-    fill: obj.display.color,
+function drawBall() {
+  rc.circle(this.pos.x, this.pos.y, this.size*2, {
+    fill: this.display.color,
     strokeWidth: 1,
-    roughness: 0.8*Math.abs(obj.vel.x / physicsConstants.defaultMaxHorizontalAirSpeed) + 1.8*Math.abs(obj.vel.y / physicsConstants.defaultMaxFlightClimbSpeed) + 0.4
+    roughness: 0.8*Math.abs(this.vel.x / physicsConstants.defaultMaxHorizontalAirSpeed) + 1.8*Math.abs(this.vel.y / physicsConstants.defaultMaxFlightClimbSpeed) + 0.4
   });
-  if (obj.kineticState.rattled > 0) {
+  if (this.kineticState.rattled > 0) {
     const ro = Math.random()*0.5;
-    rc.arc(obj.pos.x, obj.pos.y, obj.size*2.45, obj.size*2.45, ro+Math.PI, ro+Math.PI * 1.15, false, {
+    rc.arc(this.pos.x, this.pos.y, this.size*2.45, this.size*2.45, ro+Math.PI, ro+Math.PI * 1.15, false, {
       roughness: 2
     });
-    rc.arc(obj.pos.x, obj.pos.y, obj.size*2.45, obj.size*2.45, ro+Math.PI * 1.7, ro+Math.PI * 1.85, false, {
+    rc.arc(this.pos.x, this.pos.y, this.size*2.45, this.size*2.45, ro+Math.PI * 1.7, ro+Math.PI * 1.85, false, {
       roughness: 2
     });
-    rc.arc(obj.pos.x, obj.pos.y, obj.size*2.45, obj.size*2.45, ro+Math.PI * 2.5, ro+Math.PI * 2.65, false, {
+    rc.arc(this.pos.x, this.pos.y, this.size*2.45, this.size*2.45, ro+Math.PI * 2.5, ro+Math.PI * 2.65, false, {
       roughness: 2
     });
-    obj.kineticState.rattled -= physicsConstants.defaultTimeDelPerCycle;
+    this.kineticState.rattled -= physicsConstants.defaultTimeDelPerCycle;
   }
 }
+exports.drawBall = drawBall;
 
-function drawDebris(obj) {
-  rc.circle(obj.pos.x, obj.pos.y, obj.size*2, {
+function drawDebris() {
+  rc.circle(this.pos.x, this.pos.y, this.size*2, {
     fill: 'grey',
     fillStyle: 'solid',
     stroke: "gray",
     roughness: 1.7
   });
 }
+exports.drawDebris = drawDebris;
 
 function drawEraseMarks(obj) {
   ctx.globalCompositeOperation = "destination-out";
