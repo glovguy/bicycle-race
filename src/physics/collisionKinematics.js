@@ -4,9 +4,14 @@ exports.findAllCollisions = function(allObjects, mapDimensions) {
   let collisionsHash = {};
   allObjects.forEach((obj) => {
     collisionsHash[Object.id(obj)] = exports.edgeCollisionsForObject(obj, mapDimensions);
-    collisionsHash[Object.id(obj)]['joust'] = _joustsForObject(obj, allObjects);
+    collisionsHash[Object.id(obj)]['joust'] = exports.joustsForObject(obj, allObjects);
   });
   return collisionsHash;
+}
+
+exports.collisionsForObj = function(obj, allObjects, mapDimensions) {
+  collisionsHash[Object.id(obj)] = exports.edgeCollisionsForObject(obj, mapDimensions);
+  collisionsHash[Object.id(obj)]['joust'] = exports.joustsForObject(obj, allObjects);
 }
 
 exports.edgeCollisionsForObject = function(obj, mapDimensions) {
@@ -28,7 +33,7 @@ exports.edgeCollisionsForObject = function(obj, mapDimensions) {
   return collision;
 }
 
-const _joustsForObject = function(obj, allObjs) {
+exports.joustsForObject = function(obj, allObjs) {
   const objCollisions = allObjs.filter((other) => {
     if (other == obj || !obj.collidable || !other.collidable) { return false; }
     return _objsAreIntersecting(obj, other);

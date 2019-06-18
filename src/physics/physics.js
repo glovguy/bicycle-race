@@ -16,6 +16,36 @@ const jumpAccel = 550 / physicsConstants.defaultTimeDelPerCycle;
 let mapWidth;
 let mapHeight;
 
+class World {
+  constructor(width, height, objects=[]) {
+    this.width = width;
+    this.height = height;
+    this.allObjects = objects;
+  }
+
+  push(obj) { return this.allObjects.push(obj); }
+  clear() { this.allObjects = []; }
+  get length() { return this.allObjects.length; }
+
+  physicsCycle(callbacks) {
+    const collisions = collisionKinematics.findAllCollisions(exports.allObjects, [mapWidth,mapHeight]);
+    exports.allObjects.forEach((obj) => {
+      if (collisions[Object.id(obj)]['joust']['died']) {
+        const killer = collisions[Object.id(obj)]['joust']['other'];
+        objMurderedByObj(obj, killer, callbacks);
+      }
+      const actions = obj.isAgent ? obj.actions : {};
+      EulerCromer(obj, collisions[Object.id(obj)], actions);
+    });
+    enforceRigidBodies(exports.allObjects);
+    exports.allObjects.forEach((obj) => {
+      if (obj.display.decay !== undefined) { obj.display.decay -= 1 * physicsConstants.defaultTimeDelPerCycle; }
+    });
+    exports.allObjects = exports.allObjects.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
+  }
+}
+exports.World = World;
+
 function setBoundsOfMap(width, height) {
   mapWidth = width;
   mapHeight = height;
@@ -38,6 +68,7 @@ function physicsCycle(callbacks) {
   });
   exports.allObjects = exports.allObjects.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
 }
+exports.physicsCycle = physicsCycle;
 
 function EulerCromer(obj, collision, actions) {
   if (!collision) { return; }
@@ -104,7 +135,6 @@ function EulerCromer(obj, collision, actions) {
   obj.pos.y += obj.vel.y * exports.timeDel;
   obj.pos.x += obj.vel.x * exports.timeDel;
 }
-exports.physicsCycle = physicsCycle;
 
 function enforceRigidBodies(allObjs) {
   allObjs.forEach(enforceRigidBodiesForObj);

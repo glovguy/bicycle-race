@@ -13,7 +13,7 @@ window.goldScoreDisplay = document.querySelector('#goldScore');
 const playPauseButton = document.querySelector('#playPause');
 
 const mainCanvas = document.querySelector('#draw');
-const ctx = mainCanvas.getContext('2d');
+display.init_canvas(mainCanvas);
 
 let playing = true;
 let requestId;
@@ -22,6 +22,7 @@ let multiplayerHost = false;
 let gameUuid;
 window.score = { blue: 0, gold: 0 };
 physics.setBoundsOfMap(mainCanvas.width, mainCanvas.height);
+const world = (mainCanvas.width, mainCanvas.height);
 
 let blueBody = new physicsObjects.AgentObject(100, 75, 'blue');
 let goldBody = new physicsObjects.AgentObject(1165, 75, 'gold');
@@ -54,12 +55,15 @@ function onCollision(obj) {
 }
 
 function debrisFromUser($event) {
-  physics.allObjects.push(new physicsObjects.Debris($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5)));
+  const newDebris = new physicsObjects.Debris($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5));
+  physics.allObjects.push(newDebris);
+  World.push(newDebris);
+  return newDebris;
 }
 
 function spawnAndEmitDebris($event) {
-  debrisFromUser($event);
-  socket.emit('Client payload', { debris: physics.allObjects[physics.allObjects.length-1] });
+  const newDebris = debrisFromUser($event);
+  socket.emit('Client payload', { debris: newDebris });
 }
 
 function resume() {
@@ -147,7 +151,7 @@ function cycleOfLife() {
 
   requestId = requestAnimFrame(cycleOfLife);
   if (multiplayerHost) { socket.emit('Host payload', { 'allObjects': physics.allObjects }); }
-  display.drawWorld(ctx, physics.allObjects);
+  display.drawWorld(physics);
 }
 
 window.addEventListener('keydown', controller.actionInput);
@@ -169,7 +173,12 @@ function spawnMultiplayerMatch() {
   goldBody['vel']['y'] = 200;
   goldBody.kineticState.freefall = true;
 
-  physics.allObjects = [protagonist, bot];
+  physics.allObjects = [];
+  physics.allObjects.push(protagonist);
+  physics.allObjects.push(bot);
+  world.clear();
+  world.push(protagonist);
+  world.push(bot);
 }
 
 let socket;
@@ -177,6 +186,7 @@ let socket;
 function terminateGame() {
   if (socket) { socket.close(); }
   brain.agents = [];
+  world.clear();
   physics.allObjects = [];
   mainCanvas.removeEventListener('click', debrisFromUser);
   mainCanvas.removeEventListener('click', spawnAndEmitDebris);
@@ -219,6 +229,7 @@ function joinMultiplayerGame() {
   brain.onlinePlayerAgent.body = blueBody;
   brain.agents = [brain.localPlayerAgent, brain.onlinePlayerAgent];
   physics.allObjects = [];
+  world.clear();
   socket = io.connect({
     query: 'gameUuid=' + gameUuid.toString(),
     resource: "socket.io"

@@ -1,7 +1,8 @@
 const physics = require('../src/physics/physics');
 const physicsObjects = require('../src/physics/objects');
 const collisionKinematics = require('../src/physics/collisionKinematics');
-console.log(physics);
+const utils = require('../src/utilities');
+
 
 describe('Vector', () => {
   let newVec;
@@ -20,6 +21,25 @@ describe('Vector', () => {
 
   test('yDirection', () => {
     expect(newVec.yDirection()).toBe(-1);
+  });
+});
+
+describe('World', () => {
+  test('init', () => {
+    const testWorld = new physics.World(10, 10, [new physicsObjects.SolidObject(0, 0, 'black', 'ball', 5)]);
+    expect(testWorld.length).toEqual(1);
+  });
+
+  test('#push', () => {
+    const testWorld = new physics.World(10, 10);
+    testWorld.push(new physicsObjects.SolidObject(0, 0, 'black', 'ball', 5));
+    expect(testWorld.length).toEqual(1);
+  });
+
+  test('#clear', () => {
+    const testWorld = new physics.World(10, 10, [new physicsObjects.SolidObject(0, 0, 'black', 'ball', 5)]);
+    testWorld.clear();
+    expect(testWorld.length).toEqual(0);
   });
 });
 
