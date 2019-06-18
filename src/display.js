@@ -6,14 +6,16 @@ const boomPathString = "M4.89 59.70L4.89 9.28L17.05 9.28L17.05 9.28Q22.71 9.28 2
 let ctx;
 let rc;
 let canvas;
+let world;
 const fadeOutFrames = 30;
 
-function init_canvas(mainCanvas) {
+function initCanvas(mainCanvas, wrld) {
   canvas = mainCanvas;
   ctx = canvas.getContext('2d');
   rc = rough.canvas(canvas);
+  world = wrld;
 }
-exports.init_canvas = init_canvas;
+exports.initCanvas = initCanvas;
 
 function drawWorld(physicsModule) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -22,7 +24,7 @@ function drawWorld(physicsModule) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.globalAlpha = 1;
   ctx.strokeRect(0, 0, canvas.width, canvas.height);
-  physicsModule.allObjects.forEach((obj) => { drawObject(obj); });
+  world.allObjects.forEach((obj) => { drawObject(obj); });
 }
 exports.drawWorld = drawWorld;
 
@@ -30,7 +32,7 @@ function drawObject(obj) {
   if (obj.display.decay > 0 && obj.display.decay <= fadeOutFrames * physicsConstants.defaultTimeDelPerCycle) {
     ctx.globalAlpha = obj.display.decay / (fadeOutFrames * physicsConstants.defaultTimeDelPerCycle);
   }
-  if (typeof obj.draw !== Function) { console.log(obj)}
+  if (typeof obj.draw !== Function) { console.log(obj); }
   obj.draw();
   ctx.globalAlpha = 1;
 }

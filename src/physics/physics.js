@@ -28,20 +28,36 @@ class World {
   get length() { return this.allObjects.length; }
 
   physicsCycle(callbacks) {
-    const collisions = collisionKinematics.findAllCollisions(exports.allObjects, [mapWidth,mapHeight]);
-    exports.allObjects.forEach((obj) => {
+    const collisions = collisionKinematics.findAllCollisions(this.allObjects, [this.width, this.height]);
+    this.allObjects.forEach((obj) => {
       if (collisions[Object.id(obj)]['joust']['died']) {
         const killer = collisions[Object.id(obj)]['joust']['other'];
-        objMurderedByObj(obj, killer, callbacks);
+        this.objMurderedByObj(obj, killer, callbacks);
       }
       const actions = obj.isAgent ? obj.actions : {};
       EulerCromer(obj, collisions[Object.id(obj)], actions);
     });
-    enforceRigidBodies(exports.allObjects);
-    exports.allObjects.forEach((obj) => {
+    enforceRigidBodies(this.allObjects);
+    this.allObjects.forEach((obj) => {
       if (obj.display.decay !== undefined) { obj.display.decay -= 1 * physicsConstants.defaultTimeDelPerCycle; }
     });
-    exports.allObjects = exports.allObjects.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
+    this.allObjects = this.allObjects.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
+  }
+
+  objMurderedByObj(obj, other, callbacks) {
+    const deathAtX = obj.pos.x;
+    const deathAtY = obj.pos.y;
+    respawn(obj);
+    this.allObjects.push(new physicsObjects.Erasure(deathAtX, deathAtY));
+    callbacks.onCollision(other);
+    // TODO: Move these four lines to AgentObject onDeath
+    this.allObjects.push(new physicsObjects.Debris(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random()));
+    this.allObjects.push(new physicsObjects.Debris(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random()));
+    this.allObjects.push(new physicsObjects.Debris(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random()));
+    this.allObjects.push(new physicsObjects.Debris(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random()));
+    callbacks.onDeath(obj);
+    callbacks.onKill(other);
+    callbacks.incrementScoreForTeam(other.display.color);
   }
 }
 exports.World = World;
@@ -51,24 +67,6 @@ function setBoundsOfMap(width, height) {
   mapHeight = height;
 }
 exports.setBoundsOfMap = setBoundsOfMap;
-
-function physicsCycle(callbacks) {
-  const collisions = collisionKinematics.findAllCollisions(exports.allObjects, [mapWidth,mapHeight]);
-  exports.allObjects.forEach((obj) => {
-    if (collisions[Object.id(obj)]['joust']['died']) {
-      const killer = collisions[Object.id(obj)]['joust']['other'];
-      objMurderedByObj(obj, killer, callbacks);
-    }
-    const actions = obj.isAgent ? obj.actions : {};
-    EulerCromer(obj, collisions[Object.id(obj)], actions);
-  });
-  enforceRigidBodies(exports.allObjects);
-  exports.allObjects.forEach((obj) => {
-    if (obj.display.decay !== undefined) { obj.display.decay -= 1 * physicsConstants.defaultTimeDelPerCycle; }
-  });
-  exports.allObjects = exports.allObjects.filter((obj) => obj.display.decay == undefined || obj.display.decay > 0 );
-}
-exports.physicsCycle = physicsCycle;
 
 function EulerCromer(obj, collision, actions) {
   if (!collision) { return; }
@@ -168,21 +166,6 @@ function enforceRigidBodiesForObj(obj) {
   //   obj.pos.x += ((obj.pos.x - other.pos.x) + obj.size) / 2.0;
   //   obj.pos.y += ((obj.pos.y - other.pos.y) + obj.size) / 2.0;
   // });
-}
-
-function objMurderedByObj(obj, other, callbacks) {
-  const deathAtX = obj.pos.x;
-  const deathAtY = obj.pos.y;
-  respawn(obj);
-  exports.allObjects.push(new physicsObjects.Erasure(deathAtX, deathAtY));
-  callbacks.onCollision(other);
-  exports.allObjects.push(new physicsObjects.Debris(deathAtX+6, deathAtY+6, 10*Math.random(), 10*Math.random()));
-  exports.allObjects.push(new physicsObjects.Debris(deathAtX+6, deathAtY-6, 10*Math.random(), -10*Math.random()));
-  exports.allObjects.push(new physicsObjects.Debris(deathAtX-6, deathAtY+6, -10*Math.random(), 10*Math.random()));
-  exports.allObjects.push(new physicsObjects.Debris(deathAtX-6, deathAtY-6, -10*Math.random(), -10*Math.random()));
-  callbacks.onDeath(obj);
-  callbacks.onKill(other);
-  callbacks.incrementScoreForTeam(other.display.color);
 }
 
 function respawn(obj) {

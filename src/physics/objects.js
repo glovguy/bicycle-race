@@ -39,15 +39,15 @@ class Erasure extends EphemeralObject {
     this.pos = new Vector(startX, startY);
     this.vel = new Vector(0,0);
     this.display = {
-      draw: display.drawBoom,
       decay: 30 * physicsConstants.defaultTimeDelPerCycle
     };
   }
+  get draw() { return display.drawBoom; }
 }
 exports.Erasure = Erasure;
 
 class SolidObject extends PhysicalObject {
-  constructor(startX, startY, color, drawFunc, size) {
+  constructor(startX, startY, color, size) {
     super();
     this.objectType = this.constructor.name;
     this.size = size;
@@ -60,10 +60,10 @@ class SolidObject extends PhysicalObject {
       jumping: false
     };
     this.display = {
-      color: color,
-      draw: drawFunc
+      color: color
     };
   }
+  get draw() { throw 'Not implemented'; }
 };
 exports.SolidObject = SolidObject;
 
@@ -76,7 +76,7 @@ class Actions {
 
 class AgentObject extends SolidObject {
   constructor(startX, startY, color) {
-    super(startX, startY, color, display.drawBall, 35);
+    super(startX, startY, color, 35);
     this.objectType = this.constructor.name;
     this.walkingSpeed = 5300;
     this.walkingDirection = 0;
@@ -97,11 +97,12 @@ exports.AgentObject = AgentObject;
 
 class Debris extends SolidObject {
   constructor(x, y, velX=0, velY=0) {
-    super(x, y, 'gray', display.drawDebris, 3);
+    super(x, y, 'gray', 3);
     this.objectType = this.constructor.name;
     this.vel = new Vector(velX / physicsConstants.defaultTimeDelPerCycle, velY / physicsConstants.defaultTimeDelPerCycle);
     this.display.decay = 90 * physicsConstants.defaultTimeDelPerCycle;
   }
+  get draw() { return display.drawDebris; }
 }
 exports.Debris = Debris;
 
