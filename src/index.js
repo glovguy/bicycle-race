@@ -235,6 +235,13 @@ function joinMultiplayerGame() {
     resource: "socket.io"
   });
   socket.on('Host payload from server', function(payload) {
+    payload['allObjects'].map((obj) => {
+      physics.allObjects = [];
+      if (obj['objectType']) {
+        Object.setPrototypeOf(obj, physicsObjects.objectTypes[obj['objectType']].prototype);
+      }
+      return obj;
+    });
     physics.allObjects = payload['allObjects'];
   });
   mainCanvas.addEventListener('click', spawnAndEmitDebris);
