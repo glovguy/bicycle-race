@@ -62,3 +62,7 @@ function pipe(...fns) {
   return function(x) { return fns.reduce((y, f) => f(y), x); };
 }
 exports.pipe = pipe;
+
+exports.isFunction = function(functionToCheck) {
+ return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
+}

@@ -32,7 +32,7 @@ function drawObject(obj) {
   if (obj.display.decay > 0 && obj.display.decay <= fadeOutFrames * physicsConstants.defaultTimeDelPerCycle) {
     ctx.globalAlpha = obj.display.decay / (fadeOutFrames * physicsConstants.defaultTimeDelPerCycle);
   }
-  if (typeof obj.draw !== Function) { console.log(obj); }
+  if (!utilities.isFunction(obj.draw)) { console.log(obj); }
   obj.draw();
   ctx.globalAlpha = 1;
 }

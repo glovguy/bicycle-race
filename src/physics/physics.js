@@ -37,7 +37,7 @@ class World {
       const actions = obj.isAgent ? obj.actions : {};
       EulerCromer(obj, collisions[Object.id(obj)], actions);
     });
-    enforceRigidBodies(this.allObjects);
+    enforceRigidBodies(this.allObjects); // Not the right way to do it, try adding back to Euler-Cromer
     this.allObjects.forEach((obj) => {
       if (obj.display.decay !== undefined) { obj.display.decay -= 1 * physicsConstants.defaultTimeDelPerCycle; }
     });

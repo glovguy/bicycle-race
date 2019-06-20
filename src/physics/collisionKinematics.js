@@ -1,17 +1,15 @@
 const physicsConstants = require('./constants');
 
 exports.findAllCollisions = function(allObjects, mapDimensions) {
-  let collisionsHash = {};
-  allObjects.forEach((obj) => {
-    collisionsHash[Object.id(obj)] = exports.edgeCollisionsForObject(obj, mapDimensions);
-    collisionsHash[Object.id(obj)]['joust'] = exports.joustsForObject(obj, allObjects);
-  });
-  return collisionsHash;
+  return allObjects.reduce((collHash, obj) => {
+    return _collisionsForObj(collHash, obj, allObjects, mapDimensions);
+  }, {});
 }
 
-exports.collisionsForObj = function(obj, allObjects, mapDimensions) {
+const _collisionsForObj = function(collisionsHash, obj, allObjects, mapDimensions) {
   collisionsHash[Object.id(obj)] = exports.edgeCollisionsForObject(obj, mapDimensions);
   collisionsHash[Object.id(obj)]['joust'] = exports.joustsForObject(obj, allObjects);
+  return collisionsHash;
 }
 
 exports.edgeCollisionsForObject = function(obj, mapDimensions) {
@@ -24,7 +22,7 @@ exports.edgeCollisionsForObject = function(obj, mapDimensions) {
     right: obj.pos.x + obj.size >= mapWidth,
     topStick: obj.pos.y - obj.size == 0
   };
-  if (obj.isAgent) {
+  if (obj.isAgent) {  // TODO: Move reportcard actions to AgentObject as callback
     if (collision['left']) { obj.reportCard.push('leftEdgeCollision'); }
     if (collision['right']) { obj.reportCard.push('rightEdgeCollision'); }
     if (collision['top']) { obj.reportCard.push('topEdgeCollision'); }
