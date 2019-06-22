@@ -101,12 +101,12 @@ function resetAgentsActions(agents) {
   });
 }
 
-function botBrainCycle() {
+function botBrainCycle(world) {
   exports.agents.forEach((agent) => {
     if (!agent.isAi) { return; }
     // agent['reportCard']['history'].push(snapMomentAsObject(agent.body, agent.enemy));
     // if (agent['reportCard']['history'].length > 50) { agent['reportCard']['history'].shift(); }
-    agent.decision();
+    agent.decision(world);
   });
 }
 exports.botBrainCycle = botBrainCycle;
@@ -135,10 +135,10 @@ function loadnet(t) {
 
 let sinusoidCycleTime = 0;
 
-function sinusoidalDecision() {
-  sinusoidCycleTime += physics.timeDel;
-  if (sinusoidCycleTime > 10 * physics.timeDel) { sinusoidCycleTime = 0; }
-  if (sinusoidCycleTime < 5 * physics.timeDel) {
+function sinusoidalDecision(world) {
+  sinusoidCycleTime += world.timeDel;
+  if (sinusoidCycleTime > 10 * world.timeDel) { sinusoidCycleTime = 0; }
+  if (sinusoidCycleTime < 5 * world.timeDel) {
     this.body.actions.jumping = true;
   } else {
     this.body.actions.jumping = false;
@@ -151,7 +151,7 @@ function sinusoidalDecision() {
   this.body.reportCard = [];
 }
 
-function neuralNetDecision() {
+function neuralNetDecision(world) {
   this.brain.backward(this.reportCard.reward()); // reward for previous decision
   this.reportCard = [];
 

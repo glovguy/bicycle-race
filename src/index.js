@@ -20,7 +20,6 @@ let multiplayerMode;
 let multiplayerHost = false;
 let gameUuid;
 window.score = { blue: 0, gold: 0 };
-physics.setBoundsOfMap(mainCanvas.width, mainCanvas.height);
 const world = new physics.World(mainCanvas.width, mainCanvas.height);
 display.initCanvas(mainCanvas, world);
 
@@ -56,7 +55,6 @@ function onCollision(obj) {
 
 function debrisFromUser($event) {
   const debris = new physicsObjects.Debris($event.offsetX, $event.offsetY, 10*(Math.random()-0.5), 10*(Math.random()-0.5));
-  // physics.allObjects.push(debris);
   world.push(debris);
   return debris;
 }
@@ -134,7 +132,7 @@ let currentCycle = 0;
 function cycleOfLife() {
   if (!multiplayerMode && currentCycle == brainDebounceCycles) {
     currentCycle = 0;
-    brain.botBrainCycle();
+    brain.botBrainCycle(world);
   }
   if (multiplayerMode) {
     const actionsToEmit = { walkingDirection: brain.localPlayerAgent.body.actions.walkingDirection };
@@ -143,7 +141,6 @@ function cycleOfLife() {
   }
   currentCycle += 1;
 
-  // physics.physicsCycle(callbacks);
   world.physicsCycle(callbacks);
 
   brain.agents.forEach((agent) => {
@@ -174,9 +171,6 @@ function spawnMultiplayerMatch() {
   goldBody['vel']['y'] = 200;
   goldBody.kineticState.freefall = true;
 
-  // physics.allObjects = [];
-  // physics.allObjects.push(protagonist);
-  // physics.allObjects.push(bot);
   world.clear();
   world.push(protagonist);
   world.push(bot);
@@ -188,7 +182,6 @@ function terminateGame() {
   if (socket) { socket.close(); }
   brain.agents = [];
   world.clear();
-  // physics.allObjects = [];
   mainCanvas.removeEventListener('click', debrisFromUser);
   mainCanvas.removeEventListener('click', spawnAndEmitDebris);
   stop();
@@ -215,7 +208,6 @@ function startMultiplayerGame() {
           Object.setPrototypeOf(obj, physicsObjects.objectTypes[obj['objectType']].prototype);
         }
       })
-      // physics.allObjects.push(obj);
       world.push(obj);
     }
     if (payload['actions']) { brain.onlinePlayerAgent.body.actions = payload['actions'][0]; }
@@ -237,7 +229,6 @@ function joinMultiplayerGame() {
   brain.localPlayerAgent.body = goldBody;
   brain.onlinePlayerAgent.body = blueBody;
   brain.agents = [brain.localPlayerAgent, brain.onlinePlayerAgent];
-  // physics.allObjects = [];
   world.clear();
   socket = io.connect({
     query: 'gameUuid=' + gameUuid.toString(),
@@ -245,14 +236,12 @@ function joinMultiplayerGame() {
   });
   socket.on('Host payload from server', function(payload) {
     payload['allObjects'].map((obj) => {
-      // physics.allObjects = [];
       world.clear();
       if (obj['objectType']) {
         Object.setPrototypeOf(obj, physicsObjects.objectTypes[obj['objectType']].prototype);
       }
       return obj;
     });
-    // physics.allObjects = payload['allObjects'];
     world.allObjects = payload['allObjects'];
   });
   mainCanvas.addEventListener('click', spawnAndEmitDebris);
