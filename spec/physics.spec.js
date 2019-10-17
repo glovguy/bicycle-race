@@ -76,6 +76,84 @@ describe('Objects', () => {
   });
 });
 
+describe('EulerCromer', () => {
+  const noCollision = {'joust': {} };
+  const noAction = {};
+
+  test('updates velocity with a linear walking resistance', () => {
+    let obj = new physicsObjects.SolidObject(250, 250, 'red', 5);
+    const world = new physics.World(1000, 1000, [obj]);
+    obj.kineticState.freefall = false;
+    world.walkingResistance = 0.2;
+    obj.vel.x = 100;
+
+    world.EulerCromer(obj, noCollision, noAction);
+    expect(obj.vel.x).toEqual(80);
+
+    world.EulerCromer(obj, noCollision, noAction);
+    expect(obj.vel.x).toEqual(64);
+
+    obj.vel.x = -100;
+    world.EulerCromer(obj, noCollision, noAction);
+    expect(obj.vel.x).toEqual(-80);
+  });
+
+  test('updates velocity from linear flying resistance', () => {
+    let obj = new physicsObjects.SolidObject(250, 250, 'red', 5);
+    const world = new physics.World(1000, 1000, [obj]);
+    world.flyingResistance = 0.2;
+    world.gravity = 0;
+    obj.vel.x = -100;
+    obj.vel.y = 100;
+
+    world.EulerCromer(obj, noCollision, noAction);
+    expect(obj.vel.x).toEqual(-80);
+    expect(obj.vel.y).toEqual(80);
+
+    world.EulerCromer(obj, noCollision, noAction);
+    expect(obj.vel.x).toEqual(-64);
+    expect(obj.vel.y).toEqual(64);
+  });
+
+  test('updates velocity from joust collisions', () => {
+    let obj = new physicsObjects.SolidObject(250, 250, 'red', 5);
+    const world = new physics.World(1000, 1000, [obj]);
+    world.timeDel = 0.1;
+    world.walkingResistance = 0;
+    world.flyingResistance = 0;
+    const collisionHash = { 'joust': { 'vel': { 'x': 42 } } };
+
+    world.EulerCromer(obj, collisionHash, noAction);
+
+    expect(obj.vel.x).toEqual(42);
+  });
+
+  test('updates velocity from gravity', () => {
+    let obj = new physicsObjects.SolidObject(250, 250, 'red', 5);
+    const world = new physics.World(1000, 1000, [obj]);
+    world.flyingResistance = 0;
+    world.timeDel = 0.1;
+    world.gravity = 9;
+
+    world.EulerCromer(obj, noCollision, noAction);
+
+    expect(obj.vel.y).toEqual(0.9);
+  });
+
+  test('updates position', () => {
+    let obj = new physicsObjects.SolidObject(250, 250, 'red', 5);
+    const world = new physics.World(1000, 1000, [obj]);
+    world.timeDel = 0.1;
+    world.walkingResistance = 0;
+    world.flyingResistance = 0;
+    obj.vel.x = 3;
+
+    world.EulerCromer(obj, noCollision, noAction);
+
+    expect(obj.pos.x).toEqual(250.3);
+  });
+});
+
 describe('collisionKinematics', () => {
   describe('#findAllCollisions', () => {
     const mapDims = [5000,5000];

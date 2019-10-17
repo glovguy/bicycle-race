@@ -9,12 +9,12 @@ class World {
     this.height = height;
     this.allObjects = objects;
 
-    this.gravity = 981 * 2.1;
+    this.gravity = 981 * 2.4;
     this.timeDel = 1.0 * physicsConstants.defaultTimeDelPerCycle;
     this.maxFreefallSpeed = 640;
     this.maxWalkingSpeed = 370;
-    this.walkingResistance = 20;
-    this.flyingResistance = 8;
+    this.walkingResistance = 0.10;
+    this.flyingResistance = 0.03;
     this.bumpCoefficient = 550;
     this.jumpAccel = 550 / physicsConstants.defaultTimeDelPerCycle;
   }
@@ -59,13 +59,21 @@ class World {
   EulerCromer(obj, collision, actions) {
     if (!collision) { return; }
 
+    this.EulerCromerActions(obj, actions);
+    this.EulerCromerVelocity(obj, collision);
+    this.EulerCromerPosition(obj);
+  }
+
+  EulerCromerActions(obj, actions) {
     // actions
     if (actions.walkingDirection !== undefined) { obj.vel.x += actions.walkingDirection * obj.walkingSpeed * this.timeDel; }
     if (actions.jumping) {
       obj.kineticState.freefall = true;
       obj.vel.y -= this.jumpAccel * this.timeDel;
     }
+  }
 
+  EulerCromerVelocity(obj, collision) {
     // velocity
     if (obj.kineticState.freefall) { obj.vel.y += this.gravity * this.timeDel; }
     if (collision && collision['joust']['vel']) {
@@ -73,19 +81,20 @@ class World {
       obj.vel.y = collision['joust']['vel'].y;
     }
     if (obj.vel.x !== 0) {
-      const resistance = obj.kineticState.freefall ? this.flyingResistance : this.walkingResistance;
-      if (obj.vel.x < resistance && obj.vel.x > -resistance) {
-        obj.vel.x = 0;
+      if (obj.kineticState.freefall) {
+        obj.vel.x -= this.flyingResistance * obj.vel.x;
       } else {
-        const resistanceDirection = obj.vel.x / Math.abs(obj.vel.x);
-        obj.vel.x -= resistanceDirection * resistance;
+        obj.vel.x -= this.walkingResistance * obj.vel.x;
       }
     }
+
+    obj.vel.y -= this.flyingResistance * obj.vel.y;
 
     if (obj.vel.y > this.maxFreefallSpeed && obj.kineticState.freefall) {
       const direction = obj.vel.y / Math.abs(obj.vel.y);
       obj.vel.y = this.maxFreefallSpeed * direction;
     }
+
     if (-obj.vel.y > physicsConstants.defaultMaxFlightClimbSpeed && obj.kineticState.freefall) {
       const direction = obj.vel.y / Math.abs(obj.vel.y);
       obj.vel.y = physicsConstants.defaultMaxFlightClimbSpeed * direction;
@@ -116,7 +125,9 @@ class World {
       obj.vel.y = 0;
       obj.kineticState.freefall = false;
     }
+  }
 
+  EulerCromerPosition(obj) {
     // position
     obj.pos.y += obj.vel.y * this.timeDel;
     obj.pos.x += obj.vel.x * this.timeDel;
