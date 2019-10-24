@@ -17,16 +17,18 @@ class World {
     this.flyingResistance = 0.03;
     this.bumpCoefficient = 550;
     this.jumpAccel = 550 / physicsConstants.defaultTimeDelPerCycle;
+
+    this.allRigidObjects = [ new physicsObjects.RigidRect(450, 200, 'black', 50, 50) ];
   }
 
   push(obj) { return this.allObjects.push(obj); }
-  clear() { this.allObjects = []; }
+  clear() { this.allObjects = [ ...this.allRigidObjects ]; }
   get length() { return this.allObjects.length; }
 
   physicsCycle(callbacks) {
     const collisions = collisionKinematics.findAllCollisions(this.allObjects, [this.width, this.height]);
     this.allObjects.forEach((obj) => {
-      if (collisions[Object.id(obj)]['joust']['died']) {
+      if (collisions[Object.id(obj)]['joust'] && collisions[Object.id(obj)]['joust']['died']) {
         const killer = collisions[Object.id(obj)]['joust']['other'];
         this.objMurderedByObj(obj, killer, callbacks);
       }
@@ -76,16 +78,15 @@ class World {
   EulerCromerVelocity(obj, collision) {
     // velocity
     if (obj.kineticState.freefall) { obj.vel.y += this.gravity * this.timeDel; }
-    if (collision && collision['joust']['vel']) {
+    if (collision && collision['joust'] && collision['joust']['vel']) {
       obj.vel.x = collision['joust']['vel'].x;
       obj.vel.y = collision['joust']['vel'].y;
     }
-    if (obj.vel.x !== 0) {
-      if (obj.kineticState.freefall) {
-        obj.vel.x -= this.flyingResistance * obj.vel.x;
-      } else {
-        obj.vel.x -= this.walkingResistance * obj.vel.x;
-      }
+
+    if (obj.kineticState.freefall) {
+      obj.vel.x -= this.flyingResistance * obj.vel.x;
+    } else {
+      obj.vel.x -= this.walkingResistance * obj.vel.x;
     }
 
     obj.vel.y -= this.flyingResistance * obj.vel.y;
@@ -99,7 +100,7 @@ class World {
       const direction = obj.vel.y / Math.abs(obj.vel.y);
       obj.vel.y = physicsConstants.defaultMaxFlightClimbSpeed * direction;
     }
-    if (-obj.vel.y > this.bumpCoefficient && collision.topStick) {
+    if (-obj.vel.y > this.bumpCoefficient && collision.edge.topStick) {
       const direction = obj.vel.y / Math.abs(obj.vel.y);
       obj.vel.y = this.bumpCoefficient * direction;
     }
@@ -112,16 +113,16 @@ class World {
       obj.vel.x = this.maxWalkingSpeed * direction;
     }
 
-    if (Math.abs(obj.vel.x) > this.bumpCoefficient && (collision.left || collision.right)) {
+    if (Math.abs(obj.vel.x) > this.bumpCoefficient && (collision.edge.left || collision.edge.right)) {
       obj.vel.x = -obj.vel.x;
     }
-    if (Math.abs(obj.vel.x) < this.bumpCoefficient && collision.left) {
+    if (Math.abs(obj.vel.x) < this.bumpCoefficient && collision.edge.left) {
       obj.vel.x = Math.max(obj.vel.x, 0);
     }
-    if (Math.abs(obj.vel.x) < this.bumpCoefficient && collision.right) {
+    if (Math.abs(obj.vel.x) < this.bumpCoefficient && collision.edge.right) {
       obj.vel.x = Math.min(obj.vel.x, 0); }
 
-    if (collision.bottom && obj.vel.y > 0) {
+    if (collision.edge.bottom && obj.vel.y > 0) {
       obj.vel.y = 0;
       obj.kineticState.freefall = false;
     }
@@ -139,8 +140,8 @@ class World {
 
   enforceRigidBodiesForObj(obj) {
     const collision = collisionKinematics.edgeCollisionsForObject(obj, [this.width,this.height]);
-    if (!collision) { return; }
-    if (collision.bottom) { obj.pos.y = this.height - obj.size; }
+    if (!collision.edge) { return; }
+    if (collision.edge.bottom) { obj.pos.y = this.height - obj.size; }
     if (obj.pos.y - obj.size < 0) {
       obj.pos.y = obj.size;
       if (-obj.vel.y > this.bumpCoefficient) {
@@ -148,15 +149,15 @@ class World {
         obj.vel.y = -obj.vel.y;
       }
     }
-    if (collision.right) { obj.pos.x = this.width - obj.size; }
-    if (collision.left) { obj.pos.x = obj.size; }
+    if (collision.edge.right) { obj.pos.x = this.width - obj.size; }
+    if (collision.edge.left) { obj.pos.x = obj.size; }
 
-    // const objCollisions = allObjects.filter((other) => {
+    // const objCollisions = this.allObjects.filter((other) => {
     //   if (other == obj) { return false; }
     //   return objsAreIntersecting(obj, other);
     // });
 
-    // if (objCollisions.length == 0) { return {}; }
+    // if (objCollisions.length == 0) { return; }
     // objCollisions.forEach((other) => {
     //   const dispDirectionX = (obj.pos.x-other.pos.x) / Math.abs(obj.pos.x-other.pos.x);
     //   const dispDirectionY = (obj.pos.y-other.pos.y) / Math.abs(obj.pos.y-other.pos.y);

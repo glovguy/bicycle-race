@@ -46,6 +46,30 @@ class Erasure extends EphemeralObject {
 }
 exports.Erasure = Erasure;
 
+class RigidRect extends PhysicalObject {
+  constructor(startX, startY, color, height, width) {
+    super();
+    this.objectType = this.constructor.name;
+    this.height = height;
+    this.width = width;
+    this.pos = new Vector(startX, startY);
+    this.vel = new Vector(0, 0);
+    this.killable = false;
+    this.collidable = true;
+    this.collision = 'rect';
+    this.kineticState = {
+      freefall: false,
+      jumping: false,
+      fixed: true,
+    };
+    this.display = {
+      color: color
+    };
+  }
+  get draw() { return display.drawRect; }
+}
+exports.RigidRect = RigidRect;
+
 class SolidObject extends PhysicalObject {
   constructor(startX, startY, color, size) {
     super();
@@ -55,6 +79,7 @@ class SolidObject extends PhysicalObject {
     this.vel = new Vector(0, 0);
     this.killable = false;
     this.collidable = true;
+    this.collision = 'sphere';
     this.kineticState = {
       freefall: true,
       jumping: false
@@ -64,7 +89,7 @@ class SolidObject extends PhysicalObject {
     };
   }
   get draw() { throw 'Not implemented'; }
-};
+}
 exports.SolidObject = SolidObject;
 
 class Actions {

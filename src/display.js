@@ -91,6 +91,15 @@ function drawEraseMarks(obj) {
   ctx.globalCompositeOperation = 'source-over';
 }
 
+function drawRect() {
+  rc.rectangle(this.pos.x-this.width/2.0, this.pos.y-this.height/2.0, this.width, this.height, {
+    fill: this.display.color,
+    strokeWidth: 1,
+    roughness: 1,
+  });
+}
+exports.drawRect = drawRect;
+
 const drawFunctions = {
   'boom': drawBoom,
   'ball': drawBall,

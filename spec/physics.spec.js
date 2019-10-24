@@ -41,9 +41,11 @@ describe('World', () => {
   test('#clear', () => {
     const testWorld = new physics.World(10, 10, [new physicsObjects.SolidObject(0, 0, 'black', 'ball', 5)]);
 
+    testWorld.allRigidObjects = ['foo'];
     testWorld.clear();
 
-    expect(testWorld.length).toEqual(0);
+    expect(testWorld.length).toEqual(1);
+    expect(testWorld.allObjects[0]).toEqual('foo');
   });
 });
 
@@ -77,7 +79,7 @@ describe('Objects', () => {
 });
 
 describe('EulerCromer', () => {
-  const noCollision = {'joust': {} };
+  const noCollision = { 'joust': {}, 'edge': {} };
   const noAction = {};
 
   test('updates velocity with a linear walking resistance', () => {
@@ -121,7 +123,7 @@ describe('EulerCromer', () => {
     world.timeDel = 0.1;
     world.walkingResistance = 0;
     world.flyingResistance = 0;
-    const collisionHash = { 'joust': { 'vel': { 'x': 42 } } };
+    const collisionHash = { 'edge': {}, 'joust': { 'vel': { 'x': 42 } } };
 
     world.EulerCromer(obj, collisionHash, noAction);
 
@@ -190,43 +192,43 @@ describe('collisionKinematics', () => {
       });
 
       it('detects a collision with the right edge of the map', () => {
-        expect(collisions[Object.id(objRightColl)].top).toBeFalsy();
-        expect(collisions[Object.id(objRightColl)].bottom).toBeFalsy();
-        expect(collisions[Object.id(objRightColl)].left).toBeFalsy();
-        expect(collisions[Object.id(objRightColl)].right).toBeTruthy();
-        expect(collisions[Object.id(objRightColl)].topStick).toBeFalsy();
+        expect(collisions[Object.id(objRightColl)].edge.top).toBeFalsy();
+        expect(collisions[Object.id(objRightColl)].edge.bottom).toBeFalsy();
+        expect(collisions[Object.id(objRightColl)].edge.left).toBeFalsy();
+        expect(collisions[Object.id(objRightColl)].edge.right).toBeTruthy();
+        expect(collisions[Object.id(objRightColl)].edge.topStick).toBeFalsy();
       });
 
       it('detects a collision with the left edge of the map', () => {
-        expect(collisions[Object.id(objLeftColl)].top).toBeFalsy();
-        expect(collisions[Object.id(objLeftColl)].bottom).toBeFalsy();
-        expect(collisions[Object.id(objLeftColl)].left).toBeTruthy();
-        expect(collisions[Object.id(objLeftColl)].right).toBeFalsy();
-        expect(collisions[Object.id(objLeftColl)].topStick).toBeFalsy();
+        expect(collisions[Object.id(objLeftColl)].edge.top).toBeFalsy();
+        expect(collisions[Object.id(objLeftColl)].edge.bottom).toBeFalsy();
+        expect(collisions[Object.id(objLeftColl)].edge.left).toBeTruthy();
+        expect(collisions[Object.id(objLeftColl)].edge.right).toBeFalsy();
+        expect(collisions[Object.id(objLeftColl)].edge.topStick).toBeFalsy();
       });
 
       it('detects a collision with the bottom edge of the map', () => {
-        expect(collisions[Object.id(objBottomColl)].top).toBeFalsy();
-        expect(collisions[Object.id(objBottomColl)].bottom).toBeTruthy();
-        expect(collisions[Object.id(objBottomColl)].left).toBeFalsy();
-        expect(collisions[Object.id(objBottomColl)].right).toBeFalsy();
-        expect(collisions[Object.id(objBottomColl)].topStick).toBeFalsy();
+        expect(collisions[Object.id(objBottomColl)].edge.top).toBeFalsy();
+        expect(collisions[Object.id(objBottomColl)].edge.bottom).toBeTruthy();
+        expect(collisions[Object.id(objBottomColl)].edge.left).toBeFalsy();
+        expect(collisions[Object.id(objBottomColl)].edge.right).toBeFalsy();
+        expect(collisions[Object.id(objBottomColl)].edge.topStick).toBeFalsy();
       });
 
       it('detects a collision with the top edge of the map', () => {
-        expect(collisions[Object.id(objTopColl)].top).toBeTruthy();
-        expect(collisions[Object.id(objTopColl)].bottom).toBeFalsy();
-        expect(collisions[Object.id(objTopColl)].left).toBeFalsy();
-        expect(collisions[Object.id(objTopColl)].right).toBeFalsy();
-        expect(collisions[Object.id(objTopColl)].topStick).toBeFalsy();
+        expect(collisions[Object.id(objTopColl)].edge.top).toBeTruthy();
+        expect(collisions[Object.id(objTopColl)].edge.bottom).toBeFalsy();
+        expect(collisions[Object.id(objTopColl)].edge.left).toBeFalsy();
+        expect(collisions[Object.id(objTopColl)].edge.right).toBeFalsy();
+        expect(collisions[Object.id(objTopColl)].edge.topStick).toBeFalsy();
       });
 
       it('detects a stick at the top edge of the map', () => {
-        expect(collisions[Object.id(objSticked)].top).toBeTruthy();
-        expect(collisions[Object.id(objSticked)].bottom).toBeFalsy();
-        expect(collisions[Object.id(objSticked)].left).toBeFalsy();
-        expect(collisions[Object.id(objSticked)].right).toBeFalsy();
-        expect(collisions[Object.id(objSticked)].topStick).toBeTruthy();
+        expect(collisions[Object.id(objSticked)].edge.top).toBeTruthy();
+        expect(collisions[Object.id(objSticked)].edge.bottom).toBeFalsy();
+        expect(collisions[Object.id(objSticked)].edge.left).toBeFalsy();
+        expect(collisions[Object.id(objSticked)].edge.right).toBeFalsy();
+        expect(collisions[Object.id(objSticked)].edge.topStick).toBeTruthy();
       });
     });
 
