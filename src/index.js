@@ -260,14 +260,11 @@ function startGameAgainstBot() {
   brain.localPlayerAgent.body = blueBody;
   brain.sinusoidalAgent.body = goldBody;
   brain.sinusoidalAgent.enemy = blueBody;
-  // neuralNetAgent.body = goldBody;
-  // neuralNetAgent.enemy = blueBody;
   brain.agents = [brain.localPlayerAgent, brain.sinusoidalAgent];
   cycleOfLife();
   spawnMultiplayerMatch();
   brain.agents.push(brain.sinusoidalAgent);
   window.score = { blue: 0, gold: 0 };
-  console.log('Started game at:', gameUuid);
 }
 
 window.requestAnimFrame = (function(callback){
