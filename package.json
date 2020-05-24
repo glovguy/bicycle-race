@@ -1,7 +1,7 @@
 {
   "name": "bicycle-race",
-  "version": "0.0.1",
-  "description": "Server for multiplayer js game",
+  "version": "1.0.0",
+  "description": "Browser physics game using from-scratch engine",
   "dependencies": {
     "express": "^4.17.1",
     "roughjs": "^4.3.1",
