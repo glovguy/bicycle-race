@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Browser physics game using from-scratch engine",
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "roughjs": "^4.3.1",
     "socket.io": "^2.3.0",
     "webpack": "^4.43.0",
